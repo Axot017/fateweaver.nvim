@@ -1,14 +1,5 @@
 local logger = require("fateweaver.logger")
 
-local function slice_table(table, start, stop)
-  local sliced = {}
-  for i = start, stop do
-    sliced[i - start + 1] = table[i]
-  end
-  return sliced
-end
-
-
 local M = {}
 
 local changes_history = {}
@@ -24,63 +15,24 @@ local function calculate_change(bufnr)
   end
 
   local current_lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
-  local current_length = #current_lines
+  local current_lines_string = table.concat(current_lines, "\n")
 
   local previous_lines = buffer_cache[bufnr].lines
-  local previous_length = #previous_lines
+  local previous_lines_string = table.concat(previous_lines, "\n")
 
-  local max_length = math.max(current_length, previous_length)
 
-  local change_begin = -1
-  local changed_from = {}
+  local diff = vim.diff(previous_lines_string, current_lines_string, {
+  })
 
-  local change_end = -1
-  local changed_to = {}
-
-  for i = 1, max_length do
-    if current_lines[i] ~= previous_lines[i] then
-      change_begin = i
-      break
-    end
-  end
-
-  if change_begin == -1 then
+  if diff == nil or #diff == 0 then
     return
   end
 
-  for j = change_begin, current_length do
-    if previous_lines[change_begin] == current_lines[j] then
-      change_end = j - 1
-      changed_from = slice_table(previous_lines, change_begin, change_begin)
-      changed_to = slice_table(current_lines, change_begin, j)
-      break
-    end
-  end
-
-  for j = change_begin, previous_length do
-    if current_lines[change_begin] == previous_lines[j] then
-      change_end = j - 1
-      changed_from = slice_table(previous_lines, change_begin, j)
-      changed_to = slice_table(current_lines, change_begin, change_begin)
-      break
-    end
-  end
-
-  for j = change_begin, max_length do
-    if previous_lines[j] == current_lines[j] then
-      change_end = j - 1
-      changed_from = slice_table(previous_lines, change_begin, j)
-      changed_to = slice_table(current_lines, change_begin, j)
-      break
-    end
-  end
+  logger.debug("Calculated diff for " .. filename .. ": " .. vim.inspect(diff))
 
   return {
     filename = filename,
-    change_begin = change_begin,
-    change_end = change_end,
-    changed_from = changed_from,
-    changed_to = changed_to,
+    diff = diff,
     timestamp = os.time(),
     bufnr = bufnr
   }
