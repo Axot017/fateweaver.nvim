@@ -103,4 +103,24 @@ function M.record_change(bufnr)
   }
 end
 
+function M.get_buffer_diffs(bufnr)
+  bufnr = bufnr or vim.api.nvim_get_current_buf()
+
+  local diffs = {}
+  for _, change in changes_history do
+    if change.bufnr == bufnr then
+      table.insert(diffs, change)
+    end
+  end
+end
+
+function M.get_all_diffs()
+  local diffs = {}
+  for _, change in changes_history do
+    table.insert(diffs, change)
+  end
+
+  return diffs
+end
+
 return M

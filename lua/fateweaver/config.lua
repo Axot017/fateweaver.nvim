@@ -2,6 +2,7 @@ local M = {}
 
 local _default_config = {
   log_level = "ERROR",
+  max_changes_in_context = 10,
 }
 
 local _config = _default_config
