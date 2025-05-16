@@ -22,7 +22,7 @@ local function calculate_change(bufnr)
 
 
   local diff = vim.diff(previous_lines_string, current_lines_string, {
-    result_type = 'indices'
+    ctxlen = 2,
   })
 
   if diff == nil or #diff == 0 then
@@ -31,18 +31,12 @@ local function calculate_change(bufnr)
 
   logger.debug("Calculated diff for " .. filename .. ": " .. vim.inspect(diff))
 
-  local diffs = {}
-
-  for _, change in diff do
-    table.insert(diffs, {
-      filename = filename,
-      diff = change,
-      timestamp = os.time(),
-      bufnr = bufnr
-    })
-  end
-
-  return diffs
+  return {
+    filename = filename,
+    diff = diff,
+    timestamp = os.time(),
+    bufnr = bufnr
+  }
 end
 
 function M.setup()
@@ -92,13 +86,11 @@ end
 
 function M.record_change(bufnr)
   bufnr = bufnr or vim.api.nvim_get_current_buf()
-  local new_changes = calculate_change(bufnr)
+  local new_change = calculate_change(bufnr)
 
-  for _, change in new_changes do
-    table.insert(changes_history, change)
-  end
+  table.insert(changes_history, new_change)
 
-  logger.debug("Recorded change: " .. vim.inspect(new_changes))
+  logger.debug("Recorded change: " .. vim.inspect(new_change))
 
   local filename = vim.api.nvim_buf_get_name(bufnr)
 
