@@ -1,4 +1,5 @@
 local logger = require("fateweaver.logger")
+local config = require("fateweaver.config")
 
 local M = {}
 
@@ -91,6 +92,11 @@ function M.record_change(bufnr)
   table.insert(changes_history, new_change)
 
   logger.debug("Recorded change: " .. vim.inspect(new_change))
+  local max_changes = config.get().max_changes_in_context
+
+  if #changes_history > max_changes then
+    table.remove(changes_history, 1)
+  end
 
   local filename = vim.api.nvim_buf_get_name(bufnr)
 
