@@ -6,6 +6,7 @@ local M = {}
 local changes_history = {}
 local buffer_cache = {}
 
+-- Core change tracking functions
 local function calculate_change(bufnr)
   bufnr = bufnr or vim.api.nvim_get_current_buf()
   local filename = vim.api.nvim_buf_get_name(bufnr)
@@ -51,14 +52,14 @@ function M.setup()
   vim.api.nvim_create_autocmd("InsertLeave", {
     pattern = "*",
     callback = function(args)
-      M.record_change(args.buf)
+      M.save_change(args.buf)
     end
   })
 
   vim.api.nvim_create_autocmd("TextChanged", {
     pattern = "*",
     callback = function(args)
-      M.record_change(args.buf)
+      M.save_change(args.buf)
     end
   })
 
@@ -85,7 +86,7 @@ function M.cache_buffer(bufnr)
   logger.debug("Cached buffer " .. bufnr .. " (" .. filename .. ")" .. " with " .. #lines .. " lines")
 end
 
-function M.record_change(bufnr)
+function M.save_change(bufnr)
   bufnr = bufnr or vim.api.nvim_get_current_buf()
   local new_change = calculate_change(bufnr)
 
