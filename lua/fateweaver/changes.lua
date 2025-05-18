@@ -120,8 +120,8 @@ function M.save_change(bufnr)
   local max_tracked_buffers = config.get().max_tracked_buffers
   if #changes_history > max_tracked_buffers then
     local oldest_change = nil
-    for _, changes in ipairs(changes_history) do
-      for _, change_in_buffer in ipairs(changes) do
+    for _, changes in pairs(changes_history) do
+      for _, change_in_buffer in pairs(changes) do
         if oldest_change == nil or change_in_buffer.timestamp < oldest_change.timestamp then
           oldest_change = change_in_buffer
         end
@@ -136,7 +136,7 @@ function M.get_buffer_diffs(bufnr)
   bufnr = bufnr or vim.api.nvim_get_current_buf()
 
   local diffs = {}
-  for _, change in ipairs(changes_history[vim.api.nvim_buf_get_name(bufnr)]) do
+  for _, change in pairs(changes_history[vim.api.nvim_buf_get_name(bufnr)]) do
     if change.bufnr == bufnr then
       table.insert(diffs, change)
     end
@@ -145,8 +145,10 @@ end
 
 function M.get_all_diffs()
   local diffs = {}
-  for _, change in ipairs(changes_history) do
-    table.insert(diffs, change)
+  for _, change in pairs(changes_history) do
+    for _, change_in_buffer in pairs(change) do
+      table.insert(diffs, change_in_buffer)
+    end
   end
 
   return diffs

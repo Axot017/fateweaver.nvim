@@ -11,8 +11,8 @@ function M.setup(opts)
   changes.setup()
 end
 
-function M.get_recent_changes_as_diff()
-  return M.changes.get_all_diffs()
+function M.get_all_diffs()
+  return changes.get_all_diffs()
 end
 
 return M
