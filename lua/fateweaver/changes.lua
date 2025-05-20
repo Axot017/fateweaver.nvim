@@ -6,7 +6,6 @@ local M = {}
 local changes_history = {}
 local buffer_cache = {}
 
--- Core change tracking functions
 local function calculate_change(bufnr)
   bufnr = bufnr or vim.api.nvim_get_current_buf()
   local filename = vim.api.nvim_buf_get_name(bufnr)
@@ -66,7 +65,6 @@ function M.setup()
   logger.debug("Change tracking autocommands created")
 end
 
--- Cache the current state of a buffer
 function M.cache_buffer(bufnr)
   bufnr = bufnr or vim.api.nvim_get_current_buf()
   local filename = vim.api.nvim_buf_get_name(bufnr)

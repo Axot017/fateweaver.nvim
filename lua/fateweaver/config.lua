@@ -4,6 +4,7 @@ local _default_config = {
   log_level = "ERROR",
   max_changes_in_context = 10,
   max_tracked_buffers = 10,
+  endpoint = "http://localhost:11434/api/generate",
 }
 
 local _config = _default_config
