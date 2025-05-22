@@ -9,11 +9,11 @@ end
 
 local M = {}
 
-function M.request_completion(history, code, callback)
+function M.request_completion(prompt, callback)
   local url = config.get().endpoint
   local body = {
     model = "hf.co/bartowski/zed-industries_zeta-GGUF:Q5_K_M",
-    prompt = "test",
+    prompt = prompt,
     stream = false,
   }
 
@@ -30,7 +30,7 @@ function M.request_completion(history, code, callback)
       end
 
       local reponse_body = vim.json.decode(res.body)
-      logger.debug("Received response: " .. vim.inspect(reponse_body))
+      logger.debug(reponse_body["response"])
       callback(reponse_body)
     end
   })

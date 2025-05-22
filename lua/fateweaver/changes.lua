@@ -139,6 +139,8 @@ function M.get_buffer_diffs(bufnr)
       table.insert(diffs, change)
     end
   end
+
+  return diffs
 end
 
 function M.get_all_diffs()
