@@ -132,6 +132,10 @@ end
 
 function M.get_buffer_diffs(bufnr)
   bufnr = bufnr or vim.api.nvim_get_current_buf()
+  local filename = vim.api.nvim_buf_get_name(bufnr)
+  if changes_history[filename] == nil then
+    return {}
+  end
 
   local diffs = {}
   for _, change in pairs(changes_history[vim.api.nvim_buf_get_name(bufnr)]) do

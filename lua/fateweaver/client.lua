@@ -30,8 +30,7 @@ function M.request_completion(prompt, callback)
       end
 
       local reponse_body = vim.json.decode(res.body)
-      logger.debug(reponse_body["response"])
-      callback(reponse_body)
+      callback(reponse_body["response"])
     end
   })
 end
