@@ -1,5 +1,6 @@
 local logger = require("fateweaver.logger")
 local changes = require("fateweaver.changes")
+local listeners = require("fateweaver.listeners")
 local client = require("fateweaver.client")
 local config = require("fateweaver.config")
 local prompt = require("fateweaver.prompt")
@@ -11,7 +12,7 @@ function M.setup(opts)
 
   config.setup(opts)
 
-  changes.setup()
+  listeners.setup()
 end
 
 function M.get_all_diffs()
