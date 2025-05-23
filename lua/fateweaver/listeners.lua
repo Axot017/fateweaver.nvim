@@ -1,5 +1,8 @@
 local logger = require("fateweaver.logger")
+local config = require("fateweaver.config")
 local changes = require("fateweaver.changes")
+local debouncer = require("fateweaver.debouncer")
+local completer = require("fateweaver.completer")
 
 local function is_real_file(bufnr)
   bufnr = bufnr or vim.api.nvim_get_current_buf()
@@ -55,6 +58,19 @@ function M.setup()
     callback = function(args)
       if is_real_file(args.buf) then
         changes.save_change(args.buf)
+      end
+    end
+  })
+
+  vim.api.nvim_create_autocmd("TextChangedI", {
+    pattern = "*",
+    callback = function(args)
+      if is_real_file(args.buf) then
+        local debounce_time = config.get().debounce_ms
+        local bufnr = args.buf
+        debouncer.debounce(debounce_time, args.buf, function()
+          completer.propose_completions(bufnr)
+        end)
       end
     end
   })

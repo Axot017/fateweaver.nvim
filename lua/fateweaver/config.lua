@@ -5,7 +5,8 @@ local _default_config = {
   max_changes_in_context = 3,
   max_tracked_buffers = 5,
   endpoint = "http://localhost:11434/api/generate",
-  context_offset = 25
+  context_offset = 25,
+  debounce_ms = 250
 }
 
 local _config = _default_config
