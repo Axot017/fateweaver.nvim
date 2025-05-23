@@ -1,5 +1,5 @@
 local logger = require("fateweaver.logger")
-
+local config = require("fateweaver.config")
 
 local prompt_template =
 "### Instruction:\nYou are a code completion assistant and your task is to analyze user edits and then rewrite an excerpt that the user provides, suggesting the appropriate edits within the excerpt, taking into account the cursor location.\n\n### User Edits:\n\n%s### User Excerpt:\n\n```%s\n%s\n```\n\n### Response:\n\n"
@@ -21,8 +21,10 @@ local function get_buffer_with_tokens(bufnr)
         string.sub(cursor_line_text, cursor_col + 1)
   end
 
-  local start_line = math.max(1, cursor_line - 50)
-  local end_line = math.min(#lines, cursor_line + 50)
+  local context_offet = config.get().context_offset
+
+  local start_line = math.max(1, cursor_line - context_offet)
+  local end_line = math.min(#lines, cursor_line + context_offet)
   local included_lines = {}
 
   for i = start_line, end_line do

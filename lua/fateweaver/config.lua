@@ -2,9 +2,10 @@ local M = {}
 
 local _default_config = {
   log_level = "ERROR",
-  max_changes_in_context = 10,
-  max_tracked_buffers = 10,
+  max_changes_in_context = 3,
+  max_tracked_buffers = 5,
   endpoint = "http://localhost:11434/api/generate",
+  context_offset = 25
 }
 
 local _config = _default_config
