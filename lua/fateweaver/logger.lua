@@ -11,7 +11,7 @@ M.levels = {
 
 
 local function format_message(level, msg)
-  return string.format("[fateweaver][%s] %s", level, msg)
+  return string.format("[fateweaver][%s] %s\n", level, msg)
 end
 
 function M.log(level_name, msg)
@@ -19,7 +19,7 @@ function M.log(level_name, msg)
   local configured_level = M.levels[config.get().log_level]
   if level >= configured_level then
     local formatted = format_message(level_name, msg)
-    vim.notify(formatted)
+    config.get().logger_fn(formatted)
   end
 end
 
