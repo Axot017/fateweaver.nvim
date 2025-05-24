@@ -11,17 +11,35 @@ local function get_editable_region()
 end
 
 local function get_editable_region_lines(bufnr, editable_region)
-  local lines = vim.api.nvim_buf_get_lines(bufnr, editable_region.start_line, editable_region.end_line, false)
+  local lines = vim.api.nvim_buf_get_lines(bufnr, editable_region.start_line - 1, editable_region.end_line, false)
 
   return lines
 end
 
-local function get_completion_lines(completions_str)
-  local completions = vim.split(completions_str, "\n")
+local function get_completion_lines(completion_str)
+  local start_marker = "<|editable_region_start|>"
+  local end_marker = "<|editable_region_end|>"
 
-  -- remove first and last line - editable region tokens
-  table.remove(completions, 1)
-  table.remove(completions, #completions)
+  local start_pos = string.find(completion_str, start_marker, 1, true)
+  local end_pos = string.find(completion_str, end_marker, 1, true)
+
+  if not start_pos or not end_pos then
+    return {}
+  end
+
+  local content_start = start_pos + string.len(start_marker)
+
+  completion_str = string.sub(completion_str, content_start, end_pos - 1)
+
+  if completion_str:sub(1, 1) == "\n" then
+    completion_str = completion_str:sub(2)
+  end
+
+  if completion_str:sub(-1) == "\n" then
+    completion_str = completion_str:sub(1, -2)
+  end
+
+  local completions = vim.split(completion_str, "\n")
 
   return completions
 end
@@ -48,6 +66,10 @@ function M.propose_completions(bufnr)
     end
 
     local proposed_completions = get_completion_lines(completions)
+    if #proposed_completions == 0 then
+      return
+    end
+
     local proposed_completions_str = table.concat(proposed_completions, "\n")
     logger.debug("Proposed completions:\n\n" .. proposed_completions_str)
 

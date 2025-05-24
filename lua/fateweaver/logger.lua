@@ -11,7 +11,7 @@ M.levels = {
 
 
 local function format_message(level, msg)
-  return string.format("[fateweaver][%s] %s\n", level, msg)
+  return string.format("[fateweaver][%s] %s", level, msg)
 end
 
 function M.log(level_name, msg)
@@ -37,6 +37,22 @@ end
 
 function M.error(msg)
   M.log("ERROR", msg)
+end
+
+function M.file_logger(filename)
+  return function(msg)
+    local timestamp = os.date("%Y-%m-%d %H:%M:%S")
+    local log_entry = string.format("[%s] %s\n", timestamp, msg)
+
+    local file = io.open(filename, "a")
+
+    if file then
+      file:write(log_entry)
+      file:close()
+    else
+      vim.notify("Failed to write to log file: " .. filename, vim.log.levels.ERROR)
+    end
+  end
 end
 
 return M
