@@ -7,10 +7,9 @@ local prompt_template =
 local edit_template = "User edited \"%s\":\n```diff\n%s\n```"
 
 
-local function get_buffer_with_tokens(bufnr)
+local function get_buffer_with_tokens(bufnr, editable_region, cursor_pos)
   local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
 
-  local cursor_pos = vim.api.nvim_win_get_cursor(0)
   local cursor_line = cursor_pos[1]
   local cursor_col = cursor_pos[2]
 
@@ -31,9 +30,6 @@ local function get_buffer_with_tokens(bufnr)
     table.insert(included_lines, lines[i])
   end
 
-  local win_top = vim.fn.line('w0')
-  local win_bottom = vim.fn.line('w$')
-
   local result = {}
 
   if start_line == 1 then
@@ -43,13 +39,13 @@ local function get_buffer_with_tokens(bufnr)
   for i, line in ipairs(included_lines) do
     local actual_line_num = start_line + i - 1
 
-    if actual_line_num == win_top then
+    if actual_line_num == editable_region.start_line then
       table.insert(result, "<|editable_region_start|>")
     end
 
     table.insert(result, line)
 
-    if actual_line_num == win_bottom then
+    if actual_line_num == editable_region.end_line then
       table.insert(result, "<|editable_region_end|>")
     end
   end
@@ -64,18 +60,19 @@ end
 
 local M = {}
 
-function M.get_prompt(bufnr, changes)
+function M.get_prompt(bufnr, editable_region, cursor_pos, changes)
   local formatted_changes = ""
   for _, change in pairs(changes) do
     formatted_changes = formatted_changes .. string.format(edit_template, change.filename, change.diff) .. "\n\n"
   end
 
-
-  local buffer_text = get_buffer_with_tokens(bufnr)
+  local buffer_text = get_buffer_with_tokens(bufnr, editable_region, cursor_pos)
 
   local prompt = string.format(prompt_template, formatted_changes, vim.api.nvim_buf_get_name(bufnr), buffer_text)
 
-  logger.debug(prompt)
+  logger.debug("Prompt:\n\n" .. prompt)
+
+  return prompt
 end
 
 return M
