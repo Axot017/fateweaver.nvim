@@ -13,4 +13,11 @@ function M.debounce(ms, key, callback)
   end)
 end
 
+function M.cancel(key)
+  if timer_map[key] then
+    vim.fn.timer_stop(timer_map[key])
+    timer_map[key] = nil
+  end
+end
+
 return M

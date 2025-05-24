@@ -35,11 +35,21 @@ end
 local M = {}
 
 function M.setup()
-  vim.api.nvim_create_autocmd({ "BufReadPost", "BufNewFile" }, {
+  vim.api.nvim_create_autocmd({ "BufEnter" }, {
     pattern = "*",
     callback = function(args)
       if is_real_file(args.buf) then
         changes.cache_buffer(args.buf)
+      end
+    end
+  })
+
+  vim.api.nvim_create_autocmd({ "BufLeave" }, {
+    pattern = "*",
+    callback = function(args)
+      if is_real_file(args.buf) then
+        debouncer.cancel(args.buf)
+        completer.clear()
       end
     end
   })
