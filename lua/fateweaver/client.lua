@@ -11,8 +11,9 @@ local M = {}
 
 function M.request_completion(prompt, callback)
   local url = config.get().endpoint
+  local model = config.get().model
   local body = {
-    model = "hf.co/bartowski/zed-industries_zeta-GGUF:Q5_K_M",
+    model = model,
     prompt = prompt,
     stream = false,
   }

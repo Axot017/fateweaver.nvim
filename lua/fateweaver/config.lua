@@ -5,6 +5,7 @@ local _default_config = {
   max_changes_in_context = 3,
   max_tracked_buffers = 5,
   endpoint = "http://localhost:11434/api/generate",
+  model = "hf.co/bartowski/zed-industries_zeta-GGUF:Q5_K_M",
   context_offset = 25,
   debounce_ms = 250
 }

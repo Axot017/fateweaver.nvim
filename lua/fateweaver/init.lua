@@ -1,8 +1,8 @@
-local logger = require("fateweaver.logger")
 local changes = require("fateweaver.changes")
-local listeners = require("fateweaver.listeners")
 local client = require("fateweaver.client")
 local config = require("fateweaver.config")
+local listeners = require("fateweaver.listeners")
+local logger = require("fateweaver.logger")
 local prompt = require("fateweaver.prompt")
 
 local M = {}
