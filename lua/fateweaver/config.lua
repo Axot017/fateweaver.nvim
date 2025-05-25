@@ -8,7 +8,7 @@ local _default_config = {
   endpoint = "http://localhost:11434/api/generate",
   model = "hf.co/bartowski/zed-industries_zeta-GGUF:Q5_K_M",
   context_offset = 25,
-  debounce_ms = 250
+  debounce_ms = 1000
 }
 
 local _config = _default_config
