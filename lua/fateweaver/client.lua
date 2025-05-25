@@ -73,6 +73,10 @@ local function get_buffer_with_tokens(bufnr, editable_region, cursor_pos)
     table.insert(result, start_file_token)
   end
 
+  if start_line > editable_region.start_line then
+    table.insert(result, start_editable_region_token)
+  end
+
   for i, line in ipairs(included_lines) do
     local actual_line_num = start_line + i - 1
 
@@ -85,6 +89,10 @@ local function get_buffer_with_tokens(bufnr, editable_region, cursor_pos)
     if actual_line_num == editable_region.end_line then
       table.insert(result, end_editable_region_token)
     end
+  end
+
+  if end_line < editable_region.end_line then
+    table.insert(result, end_editable_region_token)
   end
 
   if end_line == #lines then
