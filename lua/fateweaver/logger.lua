@@ -11,7 +11,7 @@ M.levels = {
 
 
 local function format_message(level, msg)
-  return string.format("[fateweaver][%s] %s", level, msg)
+  return string.format("[%s] %s", level, msg)
 end
 
 function M.log(level_name, msg)

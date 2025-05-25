@@ -27,7 +27,7 @@ function M.propose_completions(bufnr)
 
   local editable_region_lines = get_editable_region_lines(bufnr, editable_region)
   local editable_region_lines_str = table.concat(editable_region_lines, "\n")
-  logger.debug("Editable region lines:\n\n" .. editable_region_lines_str)
+  logger.debug("Current editable region:\n" .. editable_region_lines_str)
 
   client.request_completion(bufnr, editable_region, cursor_pos, diffs, function(completions)
     if request_bufnr ~= bufnr then
@@ -35,7 +35,7 @@ function M.propose_completions(bufnr)
     end
 
     local completions_str = table.concat(completions, "\n")
-    logger.debug("Proposed completions:\n\n" .. completions_str)
+    logger.debug("Proposed editable region:\n" .. completions_str)
 
     local diff = vim.diff(editable_region_lines_str, completions_str, {
       result_type = "indices"
@@ -45,7 +45,7 @@ function M.propose_completions(bufnr)
       return
     end
 
-    logger.debug("Diff:\n\n" .. vim.inspect(diff))
+    logger.debug("Diff:\n" .. vim.inspect(diff))
   end)
 end
 

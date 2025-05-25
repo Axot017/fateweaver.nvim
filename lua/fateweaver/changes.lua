@@ -30,7 +30,7 @@ local function calculate_change(bufnr)
     return
   end
 
-  logger.debug("Calculated diff for " .. filename .. ": " .. vim.inspect(diff))
+  logger.debug("Calculated diff for " .. filename .. ":\n" .. diff)
 
   return {
     filename = filename,
@@ -73,7 +73,7 @@ function M.save_change(bufnr)
 
   table.insert(changes_history[new_change.filename], new_change)
 
-  logger.debug("Recorded change: " .. vim.inspect(new_change))
+  logger.debug("Recorded change:\n" .. vim.inspect(new_change))
   local max_changes = config.get().max_changes_in_context
 
   if #changes_history[new_change.filename] > max_changes then
