@@ -7,18 +7,21 @@ if not curl_ok then
   return
 end
 
-local function get_completion_lines(completion_str)
-  local start_marker = "<|editable_region_start|>"
-  local end_marker = "<|editable_region_end|>"
+local start_file_token = "<|start_of_file|>"
+local end_file_token = "<|end_of_file|>"
+local start_editable_region_token = "<|editable_region_start|>"
+local end_editable_region_token = "<|editable_region_end|>"
+local user_cursor_token = "<|user_cursor_is_here|>"
 
-  local start_pos = string.find(completion_str, start_marker, 1, true)
-  local end_pos = string.find(completion_str, end_marker, 1, true)
+local function get_completion_lines(completion_str)
+  local start_pos = string.find(completion_str, start_editable_region_token, 1, true)
+  local end_pos = string.find(completion_str, end_editable_region_token, 1, true)
 
   if not start_pos or not end_pos then
     return {}
   end
 
-  local content_start = start_pos + string.len(start_marker)
+  local content_start = start_pos + string.len(start_editable_region_token)
 
   completion_str = string.sub(completion_str, content_start, end_pos - 1)
 
@@ -50,7 +53,7 @@ local function get_buffer_with_tokens(bufnr, editable_region, cursor_pos)
   local cursor_line_text = lines[cursor_line]
   if cursor_line_text then
     lines[cursor_line] = string.sub(cursor_line_text, 1, cursor_col) ..
-        "<|user_cursor_is_here|>" ..
+        user_cursor_token ..
         string.sub(cursor_line_text, cursor_col + 1)
   end
 
@@ -67,25 +70,25 @@ local function get_buffer_with_tokens(bufnr, editable_region, cursor_pos)
   local result = {}
 
   if start_line == 1 then
-    table.insert(result, "<|start_of_file|>")
+    table.insert(result, start_file_token)
   end
 
   for i, line in ipairs(included_lines) do
     local actual_line_num = start_line + i - 1
 
     if actual_line_num == editable_region.start_line then
-      table.insert(result, "<|editable_region_start|>")
+      table.insert(result, start_editable_region_token)
     end
 
     table.insert(result, line)
 
     if actual_line_num == editable_region.end_line then
-      table.insert(result, "<|editable_region_end|>")
+      table.insert(result, end_editable_region_token)
     end
   end
 
   if end_line == #lines then
-    table.insert(result, "<|end_of_file|>")
+    table.insert(result, end_file_token)
   end
 
   return table.concat(result, "\n")
