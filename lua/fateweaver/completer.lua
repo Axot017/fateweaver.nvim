@@ -17,6 +17,10 @@ end
 
 local request_bufnr = -1
 
+local function show_completions(bufnr, editable_region, diffs, current_lines, proposed_lines)
+  local cursor_position = vim.api.nvim_win_get_cursor(0)
+end
+
 local M = {}
 
 function M.propose_completions(bufnr, additional_diff)
@@ -28,14 +32,15 @@ function M.propose_completions(bufnr, additional_diff)
   local cursor_pos = vim.api.nvim_win_get_cursor(0)
   local editable_region = get_editable_region()
 
-  local editable_region_lines = get_editable_region_lines(bufnr, editable_region)
-  local editable_region_lines_str = table.concat(editable_region_lines, "\n")
-  logger.debug("Current editable region:\n" .. editable_region_lines_str)
 
   client.request_completion(bufnr, editable_region, cursor_pos, diffs, function(completions)
     if request_bufnr ~= bufnr then
       return
     end
+
+    local editable_region_lines = get_editable_region_lines(bufnr, editable_region)
+    local editable_region_lines_str = table.concat(editable_region_lines, "\n")
+    logger.debug("Current editable region:\n" .. editable_region_lines_str)
 
     local completions_str = table.concat(completions, "\n")
     logger.debug("Proposed editable region:\n" .. completions_str)
@@ -49,6 +54,8 @@ function M.propose_completions(bufnr, additional_diff)
     end
 
     logger.debug("Diff:\n" .. vim.inspect(diff))
+
+    show_completions(bufnr, editable_region, diff, editable_region_lines, completions)
   end)
 end
 

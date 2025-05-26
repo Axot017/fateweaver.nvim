@@ -151,8 +151,10 @@ function M.request_completion(bufnr, editable_region, cursor_pos, changes, callb
       local response = reponse_body["response"]
       local proposed_completions = get_completion_lines(response)
 
-      callback(proposed_completions)
       request_job = nil
+      vim.schedule(function()
+        callback(proposed_completions)
+      end)
     end,
     on_error = function(err)
       if err.exit ~= 0 then
