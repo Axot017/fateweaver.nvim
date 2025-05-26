@@ -117,6 +117,8 @@ local function get_prompt(bufnr, editable_region, cursor_pos, changes)
   return prompt
 end
 
+local request_job = nil
+
 local M = {}
 
 function M.request_completion(bufnr, editable_region, cursor_pos, changes, callback)
@@ -130,7 +132,11 @@ function M.request_completion(bufnr, editable_region, cursor_pos, changes, callb
 
   logger.debug("Requesting completion")
 
-  curl.post(url, {
+  if request_job ~= nil then
+    request_job:shutdown()
+  end
+
+  request_job = curl.post(url, {
     body = vim.json.encode(body),
     headers = {
       content_type = "application/json",
@@ -145,6 +151,14 @@ function M.request_completion(bufnr, editable_region, cursor_pos, changes, callb
       local proposed_completions = get_completion_lines(response)
 
       callback(proposed_completions)
+      request_job = nil
+    end,
+    on_error = function(err)
+      if err.exit ~= 0 then
+        logger.warn("Received error: " .. vim.inspect(err))
+      end
+      logger.debug("Request cancelled")
+      request_job = nil
     end
   })
 end
