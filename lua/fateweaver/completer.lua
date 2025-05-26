@@ -36,7 +36,6 @@ local function show_completions(bufnr, editable_region, diffs, current_lines, pr
       for i = 1, cursor_col do
         local o = original:sub(i, i)
         local p = proposed:sub(i, i)
-        logger.debug(o .. " = " .. p .. "?")
         if o ~= p then
           logger.debug("Lines not equal escaping to git diff")
           goto diff
