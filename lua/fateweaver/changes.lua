@@ -6,7 +6,7 @@ local M = {}
 local changes_history = {}
 local buffer_cache = {}
 
-local function calculate_change(bufnr)
+function M.calculate_change(bufnr)
   bufnr = bufnr or vim.api.nvim_get_current_buf()
   local filename = vim.api.nvim_buf_get_name(bufnr)
 
@@ -61,7 +61,7 @@ end
 
 function M.save_change(bufnr)
   bufnr = bufnr or vim.api.nvim_get_current_buf()
-  local new_change = calculate_change(bufnr)
+  local new_change = M.calculate_change(bufnr)
 
   if new_change == nil then
     return

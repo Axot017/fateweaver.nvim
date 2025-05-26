@@ -79,7 +79,8 @@ function M.setup()
         local debounce_time = config.get().debounce_ms
         local bufnr = args.buf
         debouncer.debounce(debounce_time, args.buf, function()
-          completer.propose_completions(bufnr)
+          local additional_change = changes.calculate_change(args.buf)
+          completer.propose_completions(bufnr, additional_change)
         end)
       end
     end

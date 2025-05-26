@@ -19,9 +19,12 @@ local request_bufnr = -1
 
 local M = {}
 
-function M.propose_completions(bufnr)
+function M.propose_completions(bufnr, additional_diff)
   request_bufnr = bufnr
   local diffs = changes.get_buffer_diffs(bufnr)
+  if additional_diff then
+    table.insert(diffs, additional_diff)
+  end
   local cursor_pos = vim.api.nvim_win_get_cursor(0)
   local editable_region = get_editable_region()
 

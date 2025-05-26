@@ -104,7 +104,8 @@ end
 
 local function get_prompt(bufnr, editable_region, cursor_pos, changes)
   local formatted_changes = ""
-  for _, change in pairs(changes) do
+  for index, _ in ipairs(changes) do
+    local change = changes[#changes - index + 1]
     formatted_changes = formatted_changes .. string.format(edit_template, change.filename, change.diff) .. "\n\n"
   end
 
@@ -157,7 +158,7 @@ function M.request_completion(bufnr, editable_region, cursor_pos, changes, callb
       if err.exit ~= 0 then
         logger.warn("Received error: " .. vim.inspect(err))
       end
-      logger.debug("Request cancelled")
+      logger.debug("Request previous cancelled")
       request_job = nil
     end
   })
