@@ -163,7 +163,9 @@ function M.propose_completions(bufnr, additional_diff)
 end
 
 function M.clear()
-  vim.api.nvim_buf_clear_namespace(request_bufnr, ns_id, 0, -1)
+  if proposed_completion then
+    vim.api.nvim_buf_clear_namespace(proposed_completion.bufnr, ns_id, 0, -1)
+  end
 end
 
 return M

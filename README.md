@@ -19,18 +19,14 @@ Many features are still being implemented, and the API may change significantly 
 
 ## TODO List
 
-- [ ] Set up basic plugin structure
-- [ ] Store user edits for LLM context
-- [ ] Implement Zeta LLM model integration
-- [ ] Make requests to prediction endpoint
-- [ ] Parse responses from LLM
-- [ ] Calculate diffs between current code and predictions
+- [x] Set up basic plugin structure
+- [x] Store user edits for LLM context
+- [x] Implement Zeta LLM model integration
+- [x] Make requests to prediction endpoint
+- [x] Parse responses from LLM
+- [x] Calculate diffs between current code and predictions
 - [ ] Allow users to apply suggested diffs
-- [ ] Create completion provider interface
-- [ ] Add configuration options for model parameters
-- [ ] Implement context-aware suggestions
 - [ ] Create UI for displaying suggestions
-- [ ] Add keybindings for accepting/rejecting suggestions
 - [ ] Write documentation and usage examples
 - [ ] Performance optimization for large files
 - [ ] Add tests
