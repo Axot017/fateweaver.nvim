@@ -72,9 +72,12 @@ function M.setup()
     end
   })
 
-  vim.api.nvim_create_autocmd("TextChangedI", {
+  vim.api.nvim_create_autocmd({ "TextChangedP", "TextChangedI" }, {
     pattern = "*",
     callback = function(args)
+      if vim.g.fateweaver_pause_completion then
+        return
+      end
       if is_real_file(args.buf) then
         local debounce_time = config.get().debounce_ms
         local bufnr = args.buf

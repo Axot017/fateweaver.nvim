@@ -115,6 +115,8 @@ function M.accept_completion()
 
   local line_number_to_replace = proposed_completion.diff[1]
 
+  vim.g.fateweaver_pause_completion = true
+
   vim.api.nvim_buf_set_lines(
     proposed_completion.bufnr,
     line_number_to_replace - 1,
@@ -122,6 +124,9 @@ function M.accept_completion()
     false,
     proposed_completion.lines_to_replace
   )
+  vim.g.fateweaver_pause_completion = true
+
+  vim.o.eventignore = ""
 
   vim.api.nvim_buf_clear_namespace(request_bufnr, ns_id, 0, -1)
 end
@@ -165,6 +170,7 @@ end
 function M.clear()
   if proposed_completion then
     vim.api.nvim_buf_clear_namespace(proposed_completion.bufnr, ns_id, 0, -1)
+    proposed_completion = nil
   end
 end
 
