@@ -18,6 +18,30 @@ end
 local request_bufnr = -1
 local ns_id = vim.api.nvim_create_namespace("fateweaver_completions")
 
+local function show_inline_completions(bufnr, cursor_pos, proposed_lines, diff)
+  local cursor_line = cursor_pos[1]
+  local cursor_col = cursor_pos[2]
+  local proposed_start = diff[3]
+  local proposed_len = diff[4]
+
+  local first_proposed_line = proposed_lines[proposed_start]
+  local first_line = first_proposed_line:sub(cursor_col + 1, #first_proposed_line)
+  vim.api.nvim_buf_set_extmark(bufnr, ns_id, cursor_line - 1, cursor_col, {
+    virt_text = { { first_line, "Comment" } },
+    virt_text_pos = "overlay",
+  })
+  if #proposed_lines > 1 then
+    local result_lines = {}
+    for i = proposed_start + 1, proposed_start + proposed_len - 1 do
+      table.insert(result_lines, { { proposed_lines[i], "Comment" } })
+    end
+    vim.api.nvim_buf_set_extmark(bufnr, ns_id, cursor_line - 1, 0, {
+      virt_lines = result_lines,
+      virt_text_pos = "overlay",
+    })
+  end
+end
+
 local function show_completions(bufnr, editable_region, diffs, current_lines, proposed_lines)
   vim.api.nvim_buf_clear_namespace(bufnr, ns_id, 0, -1)
 
@@ -32,7 +56,6 @@ local function show_completions(bufnr, editable_region, diffs, current_lines, pr
     local original_start = diff[1]
     local original_len = diff[2]
     local proposed_start = diff[3]
-    local proposed_len = diff[4]
     if original_start == cursor_line_in_region and original_len == 1 then
       local original = current_lines[original_start]
       local proposed = proposed_lines[proposed_start]
@@ -45,23 +68,7 @@ local function show_completions(bufnr, editable_region, diffs, current_lines, pr
         end
       end
       logger.debug("Showing diff as virtual text behind cursor")
-
-      local first_proposed_line = proposed_lines[proposed_start]
-      local first_line = first_proposed_line:sub(cursor_col + 1, #first_proposed_line)
-      vim.api.nvim_buf_set_extmark(bufnr, ns_id, cursor_line - 1, cursor_col, {
-        virt_text = { { first_line, "Comment" } },
-        virt_text_pos = "overlay",
-      })
-      if #proposed_lines > 1 then
-        local result_lines = {}
-        for i = proposed_start + 1, proposed_start + proposed_len - 1 do
-          table.insert(result_lines, { { proposed_lines[i], "Comment" } })
-        end
-        vim.api.nvim_buf_set_extmark(bufnr, ns_id, cursor_line - 1, 0, {
-          virt_lines = result_lines,
-          virt_text_pos = "overlay",
-        })
-      end
+      show_inline_completions(bufnr, cursor_position, proposed_lines, diff)
 
       return
     end
