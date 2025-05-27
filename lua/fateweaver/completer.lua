@@ -63,7 +63,6 @@ local function show_completions(bufnr, editable_region, diffs, current_lines, pr
         })
       end
 
-
       return
     end
   end

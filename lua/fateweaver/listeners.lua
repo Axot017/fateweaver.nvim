@@ -44,7 +44,7 @@ function M.setup()
     end
   })
 
-  vim.api.nvim_create_autocmd({ "BufLeave" }, {
+  vim.api.nvim_create_autocmd({ "BufLeave", "InsertLeave" }, {
     pattern = "*",
     callback = function(args)
       if is_real_file(args.buf) then
