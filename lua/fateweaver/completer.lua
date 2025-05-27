@@ -2,10 +2,20 @@ local changes = require("fateweaver.changes")
 local client = require("fateweaver.client")
 local logger = require("fateweaver.logger")
 
-local function get_editable_region()
+local function get_editable_region(cursor_line)
   local win_top = vim.fn.line('w0')
   local win_bottom = vim.fn.line('w$')
-  local editable_region = { start_line = win_top, end_line = win_bottom }
+  local editable_region_top = cursor_line - 15
+  if editable_region_top < win_top then
+    editable_region_top = win_top
+  end
+  local editable_region_bottom = cursor_line + 15
+  if editable_region_bottom > win_bottom then
+    editable_region_bottom = win_bottom
+  end
+
+
+  local editable_region = { start_line = editable_region_top, end_line = editable_region_bottom }
   return editable_region
 end
 
@@ -16,6 +26,7 @@ local function get_editable_region_lines(bufnr, editable_region)
 end
 
 local request_bufnr = -1
+local proposed_completion = nil
 local ns_id = vim.api.nvim_create_namespace("fateweaver_completions")
 
 local function show_inline_completions(bufnr, cursor_pos, proposed_lines, diff)
@@ -40,6 +51,19 @@ local function show_inline_completions(bufnr, cursor_pos, proposed_lines, diff)
       virt_text_pos = "overlay",
     })
   end
+
+  local lines_to_replace = {}
+
+  for i = proposed_start, proposed_start + proposed_len - 1 do
+    table.insert(lines_to_replace, proposed_lines[i])
+  end
+
+  proposed_completion = {
+    type = "inline",
+    diff = diff,
+    lines_to_replace = lines_to_replace,
+    bufnr = bufnr
+  }
 end
 
 local function show_completions(bufnr, editable_region, diffs, current_lines, proposed_lines)
@@ -81,6 +105,27 @@ end
 
 local M = {}
 
+function M.accept_completion()
+  if not proposed_completion then
+    logger.info("No completion to accept")
+    return
+  end
+
+  logger.debug("Completion accepted")
+
+  local line_number_to_replace = proposed_completion.diff[1]
+
+  vim.api.nvim_buf_set_lines(
+    proposed_completion.bufnr,
+    line_number_to_replace - 1,
+    line_number_to_replace,
+    false,
+    proposed_completion.lines_to_replace
+  )
+
+  vim.api.nvim_buf_clear_namespace(request_bufnr, ns_id, 0, -1)
+end
+
 function M.propose_completions(bufnr, additional_diff)
   request_bufnr = bufnr
   local diffs = changes.get_buffer_diffs(bufnr)
@@ -88,7 +133,7 @@ function M.propose_completions(bufnr, additional_diff)
     table.insert(diffs, additional_diff)
   end
   local cursor_pos = vim.api.nvim_win_get_cursor(0)
-  local editable_region = get_editable_region()
+  local editable_region = get_editable_region(cursor_pos[1])
 
 
   client.request_completion(bufnr, editable_region, cursor_pos, diffs, function(completions)

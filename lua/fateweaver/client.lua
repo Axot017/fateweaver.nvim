@@ -129,9 +129,8 @@ function M.request_completion(bufnr, editable_region, cursor_pos, changes, callb
     model = model,
     prompt = get_prompt(bufnr, editable_region, cursor_pos, changes),
     stream = false,
-    options = {
-      num_predict = 100
-    },
+    -- options = {
+    -- },
   }
 
   logger.debug("Requesting completion")

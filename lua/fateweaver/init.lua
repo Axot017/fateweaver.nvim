@@ -10,6 +10,8 @@ function M.setup(opts)
   config.setup(opts)
 
   listeners.setup()
+
+  vim.keymap.set('i', '<C-y>', function() require("fateweaver.completer").accept_completion() end, { silent = true })
 end
 
 function M.request_completion()
