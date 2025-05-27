@@ -76,6 +76,7 @@ function M.setup()
     pattern = "*",
     callback = function(args)
       if vim.g.fateweaver_pause_completion then
+        vim.g.fateweaver_pause_completion = false
         return
       end
       if is_real_file(args.buf) then

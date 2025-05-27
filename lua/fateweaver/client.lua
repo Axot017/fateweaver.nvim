@@ -105,7 +105,7 @@ end
 local function get_prompt(bufnr, editable_region, cursor_pos, changes)
   local formatted_changes = ""
   for index, _ in ipairs(changes) do
-    local change = changes[#changes - index + 1]
+    local change = changes[index]
     formatted_changes = formatted_changes .. string.format(edit_template, change.filename, change.diff) .. "\n\n"
   end
 

@@ -124,9 +124,13 @@ function M.accept_completion()
     false,
     proposed_completion.lines_to_replace
   )
-  vim.g.fateweaver_pause_completion = true
 
-  vim.o.eventignore = ""
+  local cursor_pos = vim.api.nvim_win_get_cursor(0)
+  local amount_of_added_lines = proposed_completion.diff[1] - 1
+  local cursor_target_line = cursor_pos[1] + amount_of_added_lines - 2 -- 0-based and one line was replaced
+  local last_line_len = #proposed_completion.lines_to_replace[#proposed_completion.lines_to_replace]
+
+  vim.api.nvim_win_set_cursor(0, { cursor_target_line, last_line_len })
 
   vim.api.nvim_buf_clear_namespace(request_bufnr, ns_id, 0, -1)
 end
