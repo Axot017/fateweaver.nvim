@@ -9,10 +9,11 @@ if not curl_ok then
 end
 
 local request_job = nil
+local job_id = 0
 
 local M = {}
 
---- Requests a completion from the LLM model based on buffer content and user changes
+local current_job_id = job_id
 ---@param bufnr number The buffer number to get completion for
 ---@param editable_region EditableRegion Region that can be edited {start_line, end_line}
 ---@param cursor_pos table Current cursor position {line, col}
@@ -33,6 +34,9 @@ function M.request_completion(bufnr, editable_region, cursor_pos, changes, callb
     request_job:shutdown()
   end
 
+  job_id = job_id + 1
+  local current_job_id = job_id
+
   request_job = curl.post(url, {
     body = vim.json.encode(body),
     headers = {
@@ -47,7 +51,9 @@ function M.request_completion(bufnr, editable_region, cursor_pos, changes, callb
       local response = reponse_body["response"]
       local proposed_completions = prompt_handler.get_completion_lines(response)
 
-      request_job = nil
+      if current_job_id == job_id then
+        request_job = nil
+      end
       vim.schedule(function()
         callback(proposed_completions)
       end)
@@ -57,7 +63,9 @@ function M.request_completion(bufnr, editable_region, cursor_pos, changes, callb
         logger.warn("Received error: " .. vim.inspect(err))
       end
       logger.debug("Request previous cancelled")
-      request_job = nil
+      if current_job_id == job_id then
+        request_job = nil
+      end
     end
   })
 end
