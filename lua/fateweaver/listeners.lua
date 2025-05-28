@@ -39,7 +39,7 @@ function M.setup()
     pattern = "*",
     callback = function(args)
       if is_real_file(args.buf) then
-        changes.cache_buffer(args.buf)
+        changes.track_buffer(args.buf)
       end
     end
   })
