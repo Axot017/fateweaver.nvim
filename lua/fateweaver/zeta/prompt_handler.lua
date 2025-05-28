@@ -1,19 +1,25 @@
-local config = require("fateweaver.config")
 local logger = require("fateweaver.logger")
-local curl_ok, curl = pcall(require, "plenary.curl")
+local config = require("fateweaver.config")
 
-if not curl_ok then
-  vim.notify("Failed to load plenary.curl", vim.log.levels.ERROR)
-  return
-end
+local M = {}
 
+-- Special tokens used in prompts
 local start_file_token = "<|start_of_file|>"
 local end_file_token = "<|end_of_file|>"
 local start_editable_region_token = "<|editable_region_start|>"
 local end_editable_region_token = "<|editable_region_end|>"
 local user_cursor_token = "<|user_cursor_is_here|>"
 
-local function get_completion_lines(completion_str)
+-- Templates for prompt construction
+local prompt_template =
+"### Instruction:\nYou are a code completion assistant and your task is to analyze user edits and then rewrite an excerpt that the user provides, suggesting the appropriate edits within the excerpt, taking into account the cursor location.\n\n### User Edits:\n\n%s### User Excerpt:\n\n```%s\n%s\n```\n\n### Response:\n\n"
+
+local edit_template = "User edited \"%s\":\n```diff\n%s\n```"
+
+--- Extracts completion lines from the LLM response by removing special tokens
+---@param completion_str string The raw completion string from the LLM
+---@return string[] Array of completion lines
+function M.get_completion_lines(completion_str)
   local start_pos = string.find(completion_str, start_editable_region_token, 1, true)
   local end_pos = string.find(completion_str, end_editable_region_token, 1, true)
 
@@ -38,13 +44,12 @@ local function get_completion_lines(completion_str)
   return completions
 end
 
-
-local prompt_template =
-"### Instruction:\nYou are a code completion assistant and your task is to analyze user edits and then rewrite an excerpt that the user provides, suggesting the appropriate edits within the excerpt, taking into account the cursor location.\n\n### User Edits:\n\n%s### User Excerpt:\n\n```%s\n%s\n```\n\n### Response:\n\n"
-
-local edit_template = "User edited \"%s\":\n```diff\n%s\n```"
-
-local function get_buffer_with_tokens(bufnr, editable_region, cursor_pos)
+--- Prepares buffer content with special tokens for the LLM prompt
+---@param bufnr number The buffer number
+---@param editable_region EditableRegion The region that can be edited
+---@param cursor_pos table Current cursor position {line, col}
+---@return string Formatted buffer content with tokens
+function M.get_buffer_with_tokens(bufnr, editable_region, cursor_pos)
   local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
 
   local cursor_line = cursor_pos[1]
@@ -102,70 +107,26 @@ local function get_buffer_with_tokens(bufnr, editable_region, cursor_pos)
   return table.concat(result, "\n")
 end
 
-local function get_prompt(bufnr, editable_region, cursor_pos, changes)
+--- Constructs the full prompt for the LLM
+---@param bufnr number The buffer number
+---@param editable_region EditableRegion The region that can be edited
+---@param cursor_pos table Current cursor position {line, col}
+---@param changes Change[] Array of recorded changes to provide as context
+---@return string The complete prompt for the LLM
+function M.get_prompt(bufnr, editable_region, cursor_pos, changes)
   local formatted_changes = ""
   for index, _ in ipairs(changes) do
     local change = changes[index]
     formatted_changes = formatted_changes .. string.format(edit_template, change.filename, change.diff) .. "\n\n"
   end
 
-  local buffer_text = get_buffer_with_tokens(bufnr, editable_region, cursor_pos)
+  local buffer_text = M.get_buffer_with_tokens(bufnr, editable_region, cursor_pos)
 
   local prompt = string.format(prompt_template, formatted_changes, vim.api.nvim_buf_get_name(bufnr), buffer_text)
 
   logger.debug("Prompt:\n\n" .. prompt)
 
   return prompt
-end
-
-local request_job = nil
-
-local M = {}
-
-function M.request_completion(bufnr, editable_region, cursor_pos, changes, callback)
-  local url = config.get().endpoint
-  local model = config.get().model
-  local body = {
-    model = model,
-    prompt = get_prompt(bufnr, editable_region, cursor_pos, changes),
-    stream = false,
-    -- options = {
-    -- },
-  }
-
-  logger.debug("Requesting completion")
-
-  if request_job ~= nil then
-    request_job:shutdown()
-  end
-
-  request_job = curl.post(url, {
-    body = vim.json.encode(body),
-    headers = {
-      content_type = "application/json",
-    },
-    callback = function(res)
-      if res.status ~= 200 then
-        logger.warn("Received error: " .. vim.inspect(res))
-      end
-
-      local reponse_body = vim.json.decode(res.body)
-      local response = reponse_body["response"]
-      local proposed_completions = get_completion_lines(response)
-
-      request_job = nil
-      vim.schedule(function()
-        callback(proposed_completions)
-      end)
-    end,
-    on_error = function(err)
-      if err.exit ~= 0 then
-        logger.warn("Received error: " .. vim.inspect(err))
-      end
-      logger.debug("Request previous cancelled")
-      request_job = nil
-    end
-  })
 end
 
 return M

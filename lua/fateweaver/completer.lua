@@ -1,6 +1,10 @@
 local changes = require("fateweaver.changes")
-local client = require("fateweaver.client")
+local client = require("fateweaver.zeta.client")
 local logger = require("fateweaver.logger")
+
+---@class EditableRegion
+---@field start_line number The starting line number of the editable region
+---@field end_line number The ending line number of the editable region
 
 local function get_editable_region(cursor_line)
   local win_top = vim.fn.line('w0')
