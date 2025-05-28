@@ -13,7 +13,6 @@ local job_id = 0
 
 local M = {}
 
-local current_job_id = job_id
 ---@param bufnr number The buffer number to get completion for
 ---@param editable_region EditableRegion Region that can be edited {start_line, end_line}
 ---@param cursor_pos table Current cursor position {line, col}
@@ -32,6 +31,7 @@ function M.request_completion(bufnr, editable_region, cursor_pos, changes, callb
 
   if request_job ~= nil then
     request_job:shutdown()
+    request_job = nil
   end
 
   job_id = job_id + 1
@@ -63,11 +63,17 @@ function M.request_completion(bufnr, editable_region, cursor_pos, changes, callb
         logger.warn("Received error: " .. vim.inspect(err))
       end
       logger.debug("Request previous cancelled")
-      if current_job_id == job_id then
-        request_job = nil
-      end
     end
   })
+end
+
+--- Cancels any in-flight completion request
+function M.cancel_request()
+  if request_job ~= nil then
+    logger.debug("Cancelling in-flight request")
+    request_job:shutdown()
+    request_job = nil
+  end
 end
 
 return M

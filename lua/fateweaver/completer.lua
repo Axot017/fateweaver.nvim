@@ -130,8 +130,8 @@ function M.accept_completion()
   )
 
   local cursor_pos = vim.api.nvim_win_get_cursor(0)
-  local amount_of_added_lines = proposed_completion.diff[1] - 1
-  local cursor_target_line = cursor_pos[1] + amount_of_added_lines - 2 -- 0-based and one line was replaced
+  local amount_of_added_lines = proposed_completion.diff[4] - 1
+  local cursor_target_line = cursor_pos[1] + amount_of_added_lines
   local last_line_len = #proposed_completion.lines_to_replace[#proposed_completion.lines_to_replace]
 
   vim.api.nvim_win_set_cursor(0, { cursor_target_line, last_line_len })
@@ -176,6 +176,7 @@ function M.propose_completions(bufnr, additional_diff)
 end
 
 function M.clear()
+  client.cancel_request()
   if proposed_completion then
     vim.api.nvim_buf_clear_namespace(proposed_completion.bufnr, ns_id, 0, -1)
     proposed_completion = nil
