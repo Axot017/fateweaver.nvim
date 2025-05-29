@@ -32,6 +32,8 @@ function M.request_completion(bufnr, editable_region, cursor_pos, changes, callb
     model = model,
     prompt = prompt_handler.get_prompt(bufnr, editable_region, cursor_pos, changes),
     stream = false,
+    temperature = 0,
+    stop = { "<|editable_region_end|>" }
   }
 
   logger.debug("Requesting completion")
@@ -55,7 +57,7 @@ function M.request_completion(bufnr, editable_region, cursor_pos, changes, callb
       end
 
       local reponse_body = vim.json.decode(res.body)
-      local response = reponse_body["response"]
+      local response = reponse_body.choices[1].text
       local proposed_completions = prompt_handler.get_completion_lines(response)
 
       if current_job_id == job_id then

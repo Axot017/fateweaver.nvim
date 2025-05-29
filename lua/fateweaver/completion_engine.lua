@@ -33,6 +33,30 @@ local function get_editable_region(cursor_line)
   return editable_region
 end
 
+local function apply_completion(proposed_completion)
+  local diff = proposed_completion.diff
+  local original_start = diff[1]
+  local original_len = diff[2]
+  local proposed_start = diff[3]
+  local proposed_len = diff[4]
+
+
+  local original_end = original_start + original_len - 1
+
+  vim.api.nvim_buf_set_lines(
+    proposed_completion.bufnr,
+    original_start - 1,
+    original_end,
+    false,
+    proposed_completion.lines_to_replace
+  )
+
+  local cursor_target_line = proposed_start + proposed_len - 1
+  local last_line_len = #proposed_completion.lines_to_replace[#proposed_completion.lines_to_replace]
+
+  vim.api.nvim_win_set_cursor(0, { cursor_target_line, last_line_len })
+end
+
 local function get_editable_region_lines(bufnr, editable_region)
   local lines = vim.api.nvim_buf_get_lines(bufnr, editable_region.start_line - 1, editable_region.end_line, false)
 
@@ -89,7 +113,6 @@ function M.show_completions(bufnr, editable_region, diffs, current_lines, propos
       end
 
       proposed_completion = {
-        type = "inline",
         diff = diff,
         lines_to_replace = lines_to_replace,
         bufnr = bufnr
@@ -105,6 +128,20 @@ function M.show_completions(bufnr, editable_region, diffs, current_lines, propos
 
   local diff = diffs[1]
   M.ui.show_diff_completions(bufnr, proposed_lines, diff)
+
+  local proposed_start = diff[3]
+  local proposed_len = diff[4]
+  local lines_to_replace = {}
+
+  for i = proposed_start, proposed_start + proposed_len - 1 do
+    table.insert(lines_to_replace, proposed_lines[i])
+  end
+
+  proposed_completion = {
+    diff = diff,
+    lines_to_replace = lines_to_replace,
+    bufnr = bufnr
+  }
 end
 
 function M.accept_completion()
@@ -115,26 +152,11 @@ function M.accept_completion()
 
   logger.debug("Completion accepted")
 
-  local line_number_to_replace = proposed_completion.diff[1]
-
   M.ui.clear(proposed_completion.bufnr)
 
   vim.g.fateweaver_pause_completion = true
 
-  vim.api.nvim_buf_set_lines(
-    proposed_completion.bufnr,
-    line_number_to_replace - 1,
-    line_number_to_replace,
-    false,
-    proposed_completion.lines_to_replace
-  )
-
-  local cursor_pos = vim.api.nvim_win_get_cursor(0)
-  local amount_of_added_lines = proposed_completion.diff[4] - 1
-  local cursor_target_line = cursor_pos[1] + amount_of_added_lines
-  local last_line_len = #proposed_completion.lines_to_replace[#proposed_completion.lines_to_replace]
-
-  vim.api.nvim_win_set_cursor(0, { cursor_target_line, last_line_len })
+  apply_completion(proposed_completion)
 end
 
 function M.propose_completions(bufnr, additional_diff)

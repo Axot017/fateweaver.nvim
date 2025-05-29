@@ -27,8 +27,12 @@ function M.get_completion_lines(completion_str)
   local start_pos = string.find(completion_str, start_editable_region_token, 1, true)
   local end_pos = string.find(completion_str, end_editable_region_token, 1, true)
 
-  if not start_pos or not end_pos then
-    return {}
+  if not start_pos then
+    start_pos = 1
+  end
+
+  if not end_pos then
+    end_pos = #completion_str
   end
 
   local content_start = start_pos + string.len(start_editable_region_token)

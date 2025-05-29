@@ -2,6 +2,6 @@ function add(a, b)
   return a + b
 end
 
-function subtract(a, b)
-  return a - b
+function multiply(value_a, value_b)
+  return value_a * value_b
 end
