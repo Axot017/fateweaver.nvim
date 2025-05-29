@@ -15,31 +15,33 @@ function M.clear(bufnr)
 end
 
 ---Shows inline completions in the buffer
----@param bufnr integer The buffer number to show completions in
----@param cursor_pos integer[] Array containing [line, column] of cursor position
----@param proposed_lines string[] Array of completion lines to display
----@param diff integer[] Array containing [original_start, original_len, proposed_start, proposed_len] difference information
+---@param completion Completion
 ---@return nil
-function M.show_inline_completions(bufnr, cursor_pos, proposed_lines, diff)
+function M.show_inline_completions(completion)
   logger.debug("ui.show_inline_completions")
+
+  local bufnr = completion.bufnr
   M.clear(bufnr)
+
+  local cursor_pos = vim.api.nvim_win_get_cursor(0)
 
   local cursor_line = cursor_pos[1]
   local cursor_col = cursor_pos[2]
-  local proposed_start = diff[3]
-  local proposed_len = diff[4]
 
-  local first_proposed_line = proposed_lines[proposed_start]
-  local first_line = first_proposed_line:sub(cursor_col + 1, #first_proposed_line)
+  local lines_to_replace = completion.lines_to_replace
+
+  local first_line_to_replace = lines_to_replace[1]
+  local first_line = first_line_to_replace:sub(cursor_col + 1, #first_line_to_replace)
   vim.api.nvim_buf_set_extmark(bufnr, ns_id, cursor_line - 1, cursor_col, {
     virt_text = { { first_line, "Comment" } },
     virt_text_pos = "overlay",
   })
-  if #proposed_lines > 1 then
+  if #lines_to_replace > 1 then
     local result_lines = {}
-    for i = proposed_start + 1, proposed_start + proposed_len - 1 do
-      table.insert(result_lines, { { proposed_lines[i], "Comment" } })
+    for i = 2, #lines_to_replace do
+      table.insert(result_lines, { { lines_to_replace[i], "Comment" } })
     end
+    logger.debug("ResultLines:\n" .. vim.inspect(result_lines))
     vim.api.nvim_buf_set_extmark(bufnr, ns_id, cursor_line - 1, 0, {
       virt_lines = result_lines,
       virt_text_pos = "overlay",
@@ -48,41 +50,33 @@ function M.show_inline_completions(bufnr, cursor_pos, proposed_lines, diff)
 end
 
 ---Shows completions as diff with highlighted changes
----@param bufnr integer The buffer number to show completions in
----@param proposed_lines string[] Array of completion lines to display
----@param diff integer[] Array containing [original_start, original_len, proposed_start, proposed_len] difference information
+---@param completion Completion
 ---@return nil
-function M.show_diff_completions(bufnr, proposed_lines, diff)
+function M.show_diff_completions(completion)
   logger.debug("ui.show_diff_completions")
+
+  local bufnr = completion.bufnr
   M.clear(bufnr)
 
-  local buffer_lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+  local diff = completion.diff
 
   local original_start = diff[1]
   local original_len = diff[2]
-  local proposed_start = diff[3]
-  local proposed_len = diff[4]
 
   local original_end = original_start + original_len - 1
 
-  local line = buffer_lines[original_end]
-
-  -- Highlight existing lines with red background
   vim.api.nvim_buf_set_extmark(bufnr, ns_id, original_start - 1, 0, {
     line_hl_group = "DiffDelete",
     end_row = original_end - 1,
-    end_col = #line - 1
   })
 
-  -- Show proposed lines as virtual text with green background
+  local lines_to_replace = completion.lines_to_replace
+
   local virtual_lines = {}
-  for i = proposed_start, proposed_start + proposed_len - 1 do
-    if i <= #proposed_lines then
-      table.insert(virtual_lines, { { proposed_lines[i], "DiffAdd" } }) -- Green background for proposed lines
-    end
+  for _, line in ipairs(lines_to_replace) do
+    table.insert(virtual_lines, { { line, "DiffAdd" } })
   end
 
-  -- Add virtual lines after the last existing line
   if #virtual_lines > 0 then
     vim.api.nvim_buf_set_extmark(bufnr, ns_id, original_end - 1, 0, {
       virt_lines = virtual_lines,

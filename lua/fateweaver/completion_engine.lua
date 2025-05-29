@@ -1,29 +1,94 @@
----@class fateweaver.Changes
+---@type fateweaver.Changes
 local changes = require("fateweaver.changes")
----@class fateweaver.Logger
+---@type fateweaver.Logger
 local logger = require("fateweaver.logger")
 
 ---@class fateweaver.Client
 ---@field request_completion fun(bufnr: integer, editable_region: EditableRegion, cursor_pos: integer[], changes: Change[], callback: fun(completions: string[])): nil
 ---@field cancel_request fun(): nil
----
+
 ---@class fateweaver.UI
----@field show_inline_completions fun(bufnr: integer, cursor_pos: integer[], proposed_lines: string[], diff: integer[]): nil
----@field show_diff_completions fun(bufnr: integer, proposed_lines: string[], diff: integer[]): nil
+---@field show_inline_completions fun(completion: Completion): nil
+---@field show_diff_completions fun(completion: Completion): nil
 ---@field clear fun(bufnr: integer): nil
 
 ---@class EditableRegion
 ---@field start_line number The starting line number of the editable region
 ---@field end_line number The ending line number of the editable region
 
-local function get_editable_region(cursor_line)
+---@class Completion
+---@field lines_to_replace string[]
+---@field diff integer[]
+---@field bufnr integer
+---@field type string
+
+---@class CompletionChain
+---@field completion Completion
+---@field next CompletionChain|nil
+
+---@param current_lines string[]
+---@param proposed_lines string[]
+---@return integer[][]
+local function calculate_diffs(current_lines, proposed_lines)
+  local current_lines_str = table.concat(current_lines, "\n")
+  logger.debug("Current lines:\n" .. current_lines_str)
+  local proposed_lines_str = table.concat(proposed_lines, "\n")
+  logger.debug("Proposed lines:\n" .. proposed_lines_str)
+
+  local diff = vim.diff(current_lines_str, proposed_lines_str, {
+    result_type = "indices"
+  })
+
+  if diff == nil or #diff == 0 then
+    logger.debug("No diff")
+    return {}
+  end
+
+  logger.debug("Diff:\n" .. vim.inspect(diff))
+
+  ---@diagnostic disable-next-line: return-type-mismatch
+  return diff
+end
+
+---@param proposed_lines string[]
+---@param diff integer[][]
+---@return string[]
+local function added_lines(proposed_lines, diff)
+  local proposed_start = diff[3]
+  local proposed_len = diff[4]
+  local result = {}
+  for i = proposed_start, proposed_start + proposed_len - 1 do
+    table.insert(result, proposed_lines[i])
+  end
+
+  return result
+end
+
+---@param editable_region EditableRegion
+---@param diff integer[][]
+---@return integer[][]
+local function adjust_diff(editable_region, diff)
+  local offset = editable_region.start_line - 1
+
+  logger.debug("Original diff: " .. vim.inspect(diff))
+  diff[1] = diff[1] + offset
+  diff[3] = diff[3] + offset
+  logger.debug("Adjusted diff: " .. vim.inspect(diff))
+
+  return diff
+end
+
+-- TODO: Add to config
+---@param cursor_row integer
+---@return EditableRegion
+local function get_editable_region(cursor_row)
   local win_top = vim.fn.line('w0')
   local win_bottom = vim.fn.line('w$')
-  local editable_region_top = cursor_line - 15
+  local editable_region_top = cursor_row - 10
   if editable_region_top < win_top then
     editable_region_top = win_top
   end
-  local editable_region_bottom = cursor_line + 15
+  local editable_region_bottom = cursor_row + 10
   if editable_region_bottom > win_bottom then
     editable_region_bottom = win_bottom
   end
@@ -33,8 +98,11 @@ local function get_editable_region(cursor_line)
   return editable_region
 end
 
+---@param proposed_completion CompletionChain
+---@return nil
 local function apply_completion(proposed_completion)
-  local diff = proposed_completion.diff
+  local new_lines = proposed_completion.completion.lines_to_replace
+  local diff = proposed_completion.completion.diff
   local original_start = diff[1]
   local original_len = diff[2]
   local proposed_start = diff[3]
@@ -44,27 +112,144 @@ local function apply_completion(proposed_completion)
   local original_end = original_start + original_len - 1
 
   vim.api.nvim_buf_set_lines(
-    proposed_completion.bufnr,
+    proposed_completion.completion.bufnr,
     original_start - 1,
     original_end,
     false,
-    proposed_completion.lines_to_replace
+    new_lines
   )
 
   local cursor_target_line = proposed_start + proposed_len - 1
-  local last_line_len = #proposed_completion.lines_to_replace[#proposed_completion.lines_to_replace]
+  if new_lines == nil or #new_lines == 0 then
+    return
+  end
+  local last_line_len = #new_lines[#new_lines]
 
   vim.api.nvim_win_set_cursor(0, { cursor_target_line, last_line_len })
 end
 
+---@param bufnr integer
+---@param editable_region EditableRegion
+---@return string[]
 local function get_editable_region_lines(bufnr, editable_region)
   local lines = vim.api.nvim_buf_get_lines(bufnr, editable_region.start_line - 1, editable_region.end_line, false)
 
   return lines
 end
 
+---@param bufnr integer
+---@param editable_region EditableRegion
+---@param diffs integer[][]
+---@param proposed_lines string[]
+---@return Completion[]
+local function generate_completions(bufnr, editable_region, diffs, proposed_lines)
+  local completions = {}
+  for _, diff in ipairs(diffs) do
+    local lines_to_replace = added_lines(proposed_lines, diff)
+    local real_diff = adjust_diff(editable_region, diff)
+    table.insert(completions, {
+      lines_to_replace = lines_to_replace,
+      diff = real_diff,
+      bufnr = bufnr
+    })
+  end
+
+  logger.debug("Completions:\n" .. vim.inspect(completions))
+
+  return completions
+end
+
+---@param bufnr integer
+---@param completions Completion[]
+---@return Completion[]
+local function sort_completions(bufnr, completions)
+  local current_lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+
+  local cursor_position = vim.api.nvim_win_get_cursor(0)
+  local cursor_line = cursor_position[1]
+  local cursor_col = cursor_position[2]
+
+  local inline_completion = {}
+  local diff_completions = {}
+
+  for _, completion in ipairs(completions) do
+    local diff = completion.diff
+
+    local original_start = diff[1]
+    local original_len = diff[2]
+
+    if original_start == cursor_line and original_len == 1 then
+      local original = current_lines[original_start]
+      local proposed = completion.lines_to_replace[1]
+
+      for i = 1, cursor_col do
+        local o = original:sub(i, i)
+        local p = proposed:sub(i, i)
+        if o ~= p then
+          goto diff
+        end
+      end
+
+      completion.type = "inline"
+      table.insert(inline_completion, completion)
+      goto continue
+    end
+
+    ::diff::
+    completion.type = "diff"
+    table.insert(diff_completions, completion)
+    ::continue::
+  end
+
+  local result = {}
+  for _, inline in ipairs(inline_completion) do
+    table.insert(result, inline)
+  end
+  for _, diff in ipairs(diff_completions) do
+    table.insert(result, diff)
+  end
+
+  logger.debug("Ordered completions:\n" .. vim.inspect(result))
+
+  return result
+end
+
+---@param sorted_completions Completion[]
+---@return CompletionChain
+local function chain_from_sorted_completions(sorted_completions)
+  local current = {
+    completion = sorted_completions[#sorted_completions],
+    next = nil,
+  }
+  for i = 1, #sorted_completions - 1 do
+    local previous = current
+    current = {
+      completion = sorted_completions[#sorted_completions - i],
+      next = previous,
+    }
+  end
+
+  logger.debug("Completions chain:\n" .. vim.inspect(current))
+
+  return current
+end
+
+---@param bufnr integer
+---@param editable_region EditableRegion
+---@param diffs integer[][]
+---@param proposed_lines string[]
+---@return CompletionChain
+local function generate_completion_chain(bufnr, editable_region, diffs, proposed_lines)
+  local completions = generate_completions(bufnr, editable_region, diffs, proposed_lines)
+  completions = sort_completions(bufnr, completions)
+
+  return chain_from_sorted_completions(completions)
+end
+
+
 local request_bufnr = -1
-local proposed_completion = nil
+---@type CompletionChain|nil
+local active_chain = nil
 
 ---@class fateweaver.CompletionEngine
 ---@field propose_completions fun(bufnr: integer, additional_change?: table): nil
@@ -79,127 +264,75 @@ function M.setup(ui, client)
   M.client = client
 end
 
-function M.show_completions(bufnr, editable_region, diffs, current_lines, proposed_lines)
-  local cursor_position = vim.api.nvim_win_get_cursor(0)
-  local cursor_line = cursor_position[1]
-  local cursor_col = cursor_position[2]
-
-  local cursor_line_in_region = cursor_line - editable_region.start_line + 1
-
-  logger.debug("Cursor real line - " .. cursor_line .. " | Cursor in editable region - " .. cursor_line_in_region)
-  for _, diff in ipairs(diffs) do
-    local original_start = diff[1]
-    local original_len = diff[2]
-    local proposed_start = diff[3]
-    local proposed_len = diff[4]
-    if original_start == cursor_line_in_region and original_len == 1 then
-      local original = current_lines[original_start]
-      local proposed = proposed_lines[proposed_start]
-      for i = 1, cursor_col do
-        local o = original:sub(i, i)
-        local p = proposed:sub(i, i)
-        if o ~= p then
-          logger.debug("Lines not equal escaping to git diff")
-          goto diff
-        end
-      end
-      logger.debug("Showing diff as virtual text behind cursor")
-      M.ui.show_inline_completions(bufnr, cursor_position, proposed_lines, diff)
-
-      local lines_to_replace = {}
-
-      for i = proposed_start, proposed_start + proposed_len - 1 do
-        table.insert(lines_to_replace, proposed_lines[i])
-      end
-
-      proposed_completion = {
-        diff = diff,
-        lines_to_replace = lines_to_replace,
-        bufnr = bufnr
-      }
-
-      return
-    end
+---@param completion Completion
+---@return nil
+function M.show_completion(completion)
+  if completion.type == "diff" then
+    M.ui.show_diff_completions(completion)
+  else
+    M.ui.show_inline_completions(completion)
   end
+end
 
-  ::diff::
+function M.start_chain(bufnr, editable_region, diffs, proposed_lines)
+  local chain = generate_completion_chain(bufnr, editable_region, diffs, proposed_lines)
 
-  logger.debug("Showing diff as as git diff")
+  active_chain = chain
 
-  local diff = diffs[1]
-  M.ui.show_diff_completions(bufnr, proposed_lines, diff)
-
-  local proposed_start = diff[3]
-  local proposed_len = diff[4]
-  local lines_to_replace = {}
-
-  for i = proposed_start, proposed_start + proposed_len - 1 do
-    table.insert(lines_to_replace, proposed_lines[i])
-  end
-
-  proposed_completion = {
-    diff = diff,
-    lines_to_replace = lines_to_replace,
-    bufnr = bufnr
-  }
+  M.show_completion(chain.completion)
 end
 
 function M.accept_completion()
-  if not proposed_completion then
+  if not active_chain then
     logger.info("No completion to accept")
     return
   end
 
   logger.debug("Completion accepted")
 
-  M.ui.clear(proposed_completion.bufnr)
+  M.ui.clear(active_chain.completion.bufnr)
 
-  vim.g.fateweaver_pause_completion = true
+  apply_completion(active_chain)
 
-  apply_completion(proposed_completion)
+  active_chain = active_chain.next
 end
 
 function M.propose_completions(bufnr, additional_diff)
+  if active_chain ~= nil and active_chain.completion.bufnr == request_bufnr then
+    M.show_completion(active_chain.completion)
+    return
+  end
+
   request_bufnr = bufnr
-  local diffs = changes.get_buffer_diffs(bufnr)
+  local previous_changes = changes.get_buffer_diffs(bufnr)
   if additional_diff then
-    table.insert(diffs, additional_diff)
+    table.insert(previous_changes, additional_diff)
   end
   local cursor_pos = vim.api.nvim_win_get_cursor(0)
   local editable_region = get_editable_region(cursor_pos[1])
 
 
-  M.client.request_completion(bufnr, editable_region, cursor_pos, diffs, function(completions)
+  M.client.request_completion(bufnr, editable_region, cursor_pos, previous_changes, function(completions)
     if request_bufnr ~= bufnr then
       return
     end
 
     local editable_region_lines = get_editable_region_lines(bufnr, editable_region)
-    local editable_region_lines_str = table.concat(editable_region_lines, "\n")
-    logger.debug("Current editable region:\n" .. editable_region_lines_str)
+    local diffs = calculate_diffs(editable_region_lines, completions)
 
-    local completions_str = table.concat(completions, "\n")
-    logger.debug("Proposed editable region:\n" .. completions_str)
-
-    local diff = vim.diff(editable_region_lines_str, completions_str, {
-      result_type = "indices"
-    })
-
-    if diff == nil or #diff == 0 then
+    if #diffs == 0 then
       return
     end
 
-    logger.debug("Diff:\n" .. vim.inspect(diff))
-
-    M.show_completions(bufnr, editable_region, diff, editable_region_lines, completions)
+    M.start_chain(bufnr, editable_region, diffs, completions)
   end)
 end
 
 function M.clear()
   M.client.cancel_request()
-  if proposed_completion then
-    M.ui.clear(proposed_completion.bufnr)
-    proposed_completion = nil
+  if active_chain then
+    M.ui.clear(active_chain.completion.bufnr)
+    active_chain = nil
   end
 end
 
