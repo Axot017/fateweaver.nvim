@@ -1,6 +1,12 @@
+---@type fateweaver.Logger
 local logger = require("fateweaver.logger")
+---@type fateweaver.Config
 local config = require("fateweaver.config")
 
+---@class fateweaver.Changes
+---@field track_buffer fun(bufnr: integer): nil
+---@field save_change fun(bufnr: integer): nil
+---@field calculate_change fun(bufnr: integer): table|nil
 local M = {}
 
 ---@class Change

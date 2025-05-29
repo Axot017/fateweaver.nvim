@@ -8,6 +8,9 @@
 ---@field context_offset integer Number of lines to include before/after for context
 ---@field debounce_ms integer Debounce time in milliseconds
 
+---@class fateweaver.Config
+---@field setup fun(opts: table): nil
+---@field get fun(): Config
 local M = {}
 
 ---@type Config

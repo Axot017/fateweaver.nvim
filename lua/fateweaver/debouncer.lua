@@ -1,6 +1,9 @@
 ---@type table<any, number>return M
 local timer_map = {}
 
+---@class fateweaver.Debouncer
+---@field debounce fun(time_ms: integer, key: any, callback: function): nil
+---@field cancel fun(key: any): nil
 local M = {}
 
 ---@param ms number milliseconds to wait before executing the callback

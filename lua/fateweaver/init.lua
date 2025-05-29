@@ -1,6 +1,13 @@
+---@type fateweaver.Config
 local config = require("fateweaver.config")
+---@type fateweaver.Listeners
 local listeners = require("fateweaver.listeners")
-local completer = require("fateweaver.completer")
+---@type fateweaver.CompletionEngine
+local completion_engine = require("fateweaver.completion_engine")
+---@type fateweaver.UI
+local ui = require("fateweaver.ui")
+---@type fateweaver.Client
+local client = require("fateweaver.zeta.client")
 
 ---@type table
 local M = {}
@@ -12,9 +19,13 @@ function M.setup(opts)
 
   config.setup(opts)
 
+  completion_engine.setup(ui, client)
+
   listeners.setup()
 
-  vim.keymap.set('i', '<C-y>', function() require("fateweaver.completer").accept_completion() end, { silent = true })
+  -- TODO: Add to config
+  vim.keymap.set('i', '<C-y>', function() require("fateweaver.completion_engine").accept_completion() end,
+    { silent = true })
 end
 
 ---Requests completions for the current buffer
@@ -23,7 +34,7 @@ function M.request_completion()
   ---@type number
   local bufnr = vim.api.nvim_get_current_buf()
 
-  completer.propose_completions(bufnr)
+  completion_engine.propose_completions(bufnr)
 end
 
 return M

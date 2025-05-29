@@ -1,5 +1,13 @@
 local config = require("fateweaver.config")
 
+---@class fateweaver.Logger
+---@field levels table<string, integer> Log level constants
+---@field log fun(level_name: string, msg: string): nil
+---@field debug fun(msg: string): nil
+---@field info fun(msg: string): nil
+---@field warn fun(msg: string): nil
+---@field error fun(msg: string): nil
+---@field file_logger fun(filename: string): fun(msg: string): nil
 local M = {}
 
 ---@enum fateweaver.LogLevel

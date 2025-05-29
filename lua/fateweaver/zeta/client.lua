@@ -1,5 +1,8 @@
+---@type fateweaver.Config
 local config = require("fateweaver.config")
+---@type fateweaver.Logger
 local logger = require("fateweaver.logger")
+---@type fateweaver.zeta.PromptHandler
 local prompt_handler = require("fateweaver.zeta.prompt_handler")
 local curl_ok, curl = pcall(require, "plenary.curl")
 
@@ -8,16 +11,20 @@ if not curl_ok then
   return
 end
 
+---@type table|nil Current request job
 local request_job = nil
+---@type integer Unique ID for tracking request jobs
 local job_id = 0
 
 local M = {}
 
----@param bufnr number The buffer number to get completion for
+---Makes a request to the completion API
+---@param bufnr integer The buffer number to get completion for
 ---@param editable_region EditableRegion Region that can be edited {start_line, end_line}
 ---@param cursor_pos table Current cursor position {line, col}
 ---@param changes Change[] Array of recorded changes to provide as context
----@param callback function Function to call with completion results
+---@param callback fun(completions: string[]) Function to call with completion results
+---@return nil
 function M.request_completion(bufnr, editable_region, cursor_pos, changes, callback)
   local url = config.get().endpoint
   local model = config.get().model
@@ -68,6 +75,7 @@ function M.request_completion(bufnr, editable_region, cursor_pos, changes, callb
 end
 
 --- Cancels any in-flight completion request
+---@return nil
 function M.cancel_request()
   if request_job ~= nil then
     logger.debug("Cancelling in-flight request")

@@ -1,16 +1,20 @@
+---@type fateweaver.Logger
 local logger = require("fateweaver.logger")
+---@type fateweaver.Config
 local config = require("fateweaver.config")
 
+---@class fateweaver.zeta.PromptHandler
+---@field get_completion_lines fun(completion_str: string): string[] Extracts completion lines from LLM response
+---@field get_buffer_with_tokens fun(bufnr: integer, editable_region: EditableRegion, cursor_pos: integer[]): string Prepares buffer content with special tokens
+---@field get_prompt fun(bufnr: integer, editable_region: EditableRegion, cursor_pos: integer[], changes: Change[]): string Constructs the complete prompt
 local M = {}
 
--- Special tokens used in prompts
 local start_file_token = "<|start_of_file|>"
 local end_file_token = "<|end_of_file|>"
 local start_editable_region_token = "<|editable_region_start|>"
 local end_editable_region_token = "<|editable_region_end|>"
 local user_cursor_token = "<|user_cursor_is_here|>"
 
--- Templates for prompt construction
 local prompt_template =
 "### Instruction:\nYou are a code completion assistant and your task is to analyze user edits and then rewrite an excerpt that the user provides, suggesting the appropriate edits within the excerpt, taking into account the cursor location.\n\n### User Edits:\n\n%s### User Excerpt:\n\n```%s\n%s\n```\n\n### Response:\n\n"
 
@@ -18,7 +22,7 @@ local edit_template = "User edited \"%s\":\n```diff\n%s\n```"
 
 --- Extracts completion lines from the LLM response by removing special tokens
 ---@param completion_str string The raw completion string from the LLM
----@return string[] Array of completion lines
+---@return string[] lines Array of completion lines
 function M.get_completion_lines(completion_str)
   local start_pos = string.find(completion_str, start_editable_region_token, 1, true)
   local end_pos = string.find(completion_str, end_editable_region_token, 1, true)
@@ -45,10 +49,10 @@ function M.get_completion_lines(completion_str)
 end
 
 --- Prepares buffer content with special tokens for the LLM prompt
----@param bufnr number The buffer number
+---@param bufnr integer The buffer number
 ---@param editable_region EditableRegion The region that can be edited
----@param cursor_pos table Current cursor position {line, col}
----@return string Formatted buffer content with tokens
+---@param cursor_pos integer[] Current cursor position {line, col}
+---@return string formatted Formatted buffer content with tokens
 function M.get_buffer_with_tokens(bufnr, editable_region, cursor_pos)
   local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
 
@@ -108,11 +112,11 @@ function M.get_buffer_with_tokens(bufnr, editable_region, cursor_pos)
 end
 
 --- Constructs the full prompt for the LLM
----@param bufnr number The buffer number
+---@param bufnr integer The buffer number
 ---@param editable_region EditableRegion The region that can be edited
----@param cursor_pos table Current cursor position {line, col}
+---@param cursor_pos integer[] Current cursor position {line, col}
 ---@param changes Change[] Array of recorded changes to provide as context
----@return string The complete prompt for the LLM
+---@return string prompt The complete prompt for the LLM
 function M.get_prompt(bufnr, editable_region, cursor_pos, changes)
   local formatted_changes = ""
   for index, _ in ipairs(changes) do

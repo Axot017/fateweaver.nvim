@@ -1,9 +1,17 @@
+---@type fateweaver.Logger
 local logger = require("fateweaver.logger")
+---@type fateweaver.Config
 local config = require("fateweaver.config")
+---@type fateweaver.Changes
 local changes = require("fateweaver.changes")
+---@type fateweaver.Debouncer
 local debouncer = require("fateweaver.debouncer")
-local completer = require("fateweaver.completer")
+---@type fateweaver.CompletionEngine
+local completion_engine = require("fateweaver.completion_engine")
 
+---Determines if a buffer should be processed for completions
+---@param bufnr? integer Buffer number to check, defaults to current buffer
+---@return boolean supported Whether the buffer is supported for completion
 local function is_buffer_supported(bufnr)
   bufnr = bufnr or vim.api.nvim_get_current_buf()
 
@@ -32,6 +40,9 @@ local function is_buffer_supported(bufnr)
   return true
 end
 
+---Wraps a callback with buffer support check
+---@param callback fun(args: table): any The callback function to wrap
+---@return fun(args: table): any wrapped_callback The wrapped callback function that only executes for supported buffers
 local function checked_callback(callback)
   return function(args)
     if is_buffer_supported(args.buf) then
@@ -40,8 +51,12 @@ local function checked_callback(callback)
   end
 end
 
+---@class fateweaver.Listeners
+---@field setup fun(): nil Initialize event listeners
 local M = {}
 
+---Sets up all event listeners for buffer changes and completion triggers
+---@return nil
 function M.setup()
   vim.api.nvim_create_autocmd({ "BufEnter" }, {
     pattern = "*",
@@ -54,7 +69,7 @@ function M.setup()
     pattern = "*",
     callback = checked_callback(function(args)
       debouncer.cancel(args.buf)
-      completer.clear()
+      completion_engine.clear()
     end)
   })
 
@@ -84,7 +99,7 @@ function M.setup()
       local bufnr = args.buf
       debouncer.debounce(debounce_time, args.buf, function()
         local additional_change = changes.calculate_change(args.buf)
-        completer.propose_completions(bufnr, additional_change)
+        completion_engine.propose_completions(bufnr, additional_change)
       end)
     end)
   })
