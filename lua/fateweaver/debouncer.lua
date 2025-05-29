@@ -1,7 +1,12 @@
+---@type table<any, number>return M
 local timer_map = {}
 
 local M = {}
 
+---@param ms number milliseconds to wait before executing the callback
+---@param key any unique identifier for this timer
+---@param callback function function to execute after debounce period
+---@return number timer id
 function M.debounce(ms, key, callback)
   if timer_map[key] then
     vim.fn.timer_stop(timer_map[key])
@@ -11,8 +16,11 @@ function M.debounce(ms, key, callback)
     callback()
     timer_map[key] = nil
   end)
+
+  return timer_map[key]
 end
 
+---@param key any the key used to identify the timer to cancel
 function M.cancel(key)
   if timer_map[key] then
     vim.fn.timer_stop(timer_map[key])
