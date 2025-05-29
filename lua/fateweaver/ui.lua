@@ -1,3 +1,6 @@
+---@type fateweaver.Logger
+local logger = require("fateweaver.logger")
+
 local M = {}
 
 ---@type integer Namespace ID for virtual text and virtual lines
@@ -7,6 +10,7 @@ local ns_id = vim.api.nvim_create_namespace("fateweaver_completions")
 ---@param bufnr integer The buffer number to clear completions from
 ---@return nil
 function M.clear(bufnr)
+  logger.debug("ui.clean")
   vim.api.nvim_buf_clear_namespace(bufnr, ns_id, 0, -1)
 end
 
@@ -14,9 +18,10 @@ end
 ---@param bufnr integer The buffer number to show completions in
 ---@param cursor_pos integer[] Array containing [line, column] of cursor position
 ---@param proposed_lines string[] Array of completion lines to display
----@param diff integer[] Array containing [start_line, end_line, proposed_start, proposed_len] difference information
+---@param diff integer[] Array containing [original_start, original_len, proposed_start, proposed_len] difference information
 ---@return nil
 function M.show_inline_completions(bufnr, cursor_pos, proposed_lines, diff)
+  logger.debug("ui.show_inline_completions")
   M.clear(bufnr)
 
   local cursor_line = cursor_pos[1]
@@ -38,6 +43,50 @@ function M.show_inline_completions(bufnr, cursor_pos, proposed_lines, diff)
     vim.api.nvim_buf_set_extmark(bufnr, ns_id, cursor_line - 1, 0, {
       virt_lines = result_lines,
       virt_text_pos = "overlay",
+    })
+  end
+end
+
+---Shows completions as diff with highlighted changes
+---@param bufnr integer The buffer number to show completions in
+---@param proposed_lines string[] Array of completion lines to display
+---@param diff integer[] Array containing [original_start, original_len, proposed_start, proposed_len] difference information
+---@return nil
+function M.show_diff_completions(bufnr, proposed_lines, diff)
+  logger.debug("ui.show_diff_completions")
+  M.clear(bufnr)
+
+  local buffer_lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+
+  local original_start = diff[1]
+  local original_len = diff[2]
+  local proposed_start = diff[3]
+  local proposed_len = diff[4]
+
+  local original_end = original_start + original_len - 1
+
+  local line = buffer_lines[original_end]
+
+  -- Highlight existing lines with red background
+  vim.api.nvim_buf_set_extmark(bufnr, ns_id, original_start - 1, 0, {
+    line_hl_group = "DiffDelete",
+    end_row = original_end - 1,
+    end_col = #line - 1
+  })
+
+  -- Show proposed lines as virtual text with green background
+  local virtual_lines = {}
+  for i = proposed_start, proposed_start + proposed_len - 1 do
+    if i <= #proposed_lines then
+      table.insert(virtual_lines, { { proposed_lines[i], "DiffAdd" } }) -- Green background for proposed lines
+    end
+  end
+
+  -- Add virtual lines after the last existing line
+  if #virtual_lines > 0 then
+    vim.api.nvim_buf_set_extmark(bufnr, ns_id, original_end - 1, 0, {
+      virt_lines = virtual_lines,
+      virt_lines_above = false,
     })
   end
 end

@@ -9,6 +9,7 @@ local logger = require("fateweaver.logger")
 ---
 ---@class fateweaver.UI
 ---@field show_inline_completions fun(bufnr: integer, cursor_pos: integer[], proposed_lines: string[], diff: integer[]): nil
+---@field show_diff_completions fun(bufnr: integer, proposed_lines: string[], diff: integer[]): nil
 ---@field clear fun(bufnr: integer): nil
 
 ---@class EditableRegion
@@ -101,6 +102,9 @@ function M.show_completions(bufnr, editable_region, diffs, current_lines, propos
   ::diff::
 
   logger.debug("Showing diff as as git diff")
+
+  local diff = diffs[1]
+  M.ui.show_diff_completions(bufnr, proposed_lines, diff)
 end
 
 function M.accept_completion()
