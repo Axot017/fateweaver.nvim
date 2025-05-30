@@ -70,10 +70,12 @@ function M.get_buffer_with_tokens(bufnr, editable_region, cursor_pos)
         string.sub(cursor_line_text, cursor_col + 1)
   end
 
-  local context_offet = config.get().context_offset
+  local context_opts = config.get().context_opts
+  local context_before_cursor = context_opts.context_before_cursor
+  local context_after_cursor = context_opts.context_after_cursor
 
-  local start_line = math.max(1, cursor_line - context_offet)
-  local end_line = math.min(#lines, cursor_line + context_offet)
+  local start_line = math.max(1, cursor_line - context_before_cursor)
+  local end_line = math.min(#lines, cursor_line + context_after_cursor)
   local included_lines = {}
 
   for i = start_line, end_line do

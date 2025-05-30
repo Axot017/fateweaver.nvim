@@ -35,19 +35,19 @@ local function calculate_diffs(current_lines, proposed_lines)
   local proposed_lines_str = table.concat(proposed_lines, "\n")
   logger.debug("Proposed lines:\n" .. proposed_lines_str)
 
-  local diff = vim.diff(current_lines_str, proposed_lines_str, {
+  local diffs = vim.diff(current_lines_str, proposed_lines_str, {
     result_type = "indices"
   })
 
-  if diff == nil or #diff == 0 then
+  if diffs == nil or #diffs == 0 then
     logger.debug("No diff")
     return {}
   end
 
-  logger.debug("Diff:\n" .. vim.inspect(diff))
+  logger.debug("Diff:\n" .. vim.inspect(diffs))
 
   ---@diagnostic disable-next-line: return-type-mismatch
-  return diff
+  return diffs
 end
 
 ---@param proposed_lines string[]
@@ -78,21 +78,25 @@ local function adjust_diff(editable_region, diff)
   return diff
 end
 
--- TODO: Add to config
 ---@param cursor_row integer
 ---@return EditableRegion
 local function get_editable_region(cursor_row)
-  local win_top = vim.fn.line('w0')
-  local win_bottom = vim.fn.line('w$')
-  local editable_region_top = cursor_row - 10
-  if editable_region_top < win_top then
-    editable_region_top = win_top
-  end
-  local editable_region_bottom = cursor_row + 10
-  if editable_region_bottom > win_bottom then
-    editable_region_bottom = win_bottom
+  local context_opts = config.get().context_opts
+  local editable_region_before_cursor = context_opts.editable_region_before_cursor
+  local editable_region_after_cursor = context_opts.editable_region_after_cursor
+
+  local buf_start = 1
+  local buf_end = vim.api.nvim_buf_line_count(0)
+
+  local editable_region_top = cursor_row - editable_region_before_cursor
+  if editable_region_top < buf_start then
+    editable_region_top = buf_start
   end
 
+  local editable_region_bottom = cursor_row + editable_region_after_cursor
+  if editable_region_bottom > buf_end then
+    editable_region_bottom = buf_end
+  end
 
   local editable_region = { start_line = editable_region_top, end_line = editable_region_bottom }
   return editable_region
@@ -230,7 +234,7 @@ local active_completions = {}
 ---@field clear fun(): nil
 ---@field set_active_buffer fun(bufnr: integer): nil
 ---@field setup fun(ui: fateweaver.UI, client: fateweaver.Client)
----@field request_completion fun(bufnr: integer, additional_change: Change)
+---@field request_completion fun(bufnr: integer, additional_change: Change|nil)
 local M = {}
 
 ---@param ui fateweaver.UI
@@ -272,7 +276,7 @@ end
 function M.accept_completion()
   local completion_idx = 1
   local completion = active_completions[completion_idx]
-  if not active_completions then
+  if not completion then
     logger.info("No completion to accept")
     return
   end
@@ -336,7 +340,6 @@ end
 
 ---@return nil
 function M.clear()
-  logger.debug("completion_engine.clear")
   M.client.cancel_request()
   if active_bufnr ~= nil then
     debouncer.cancel(active_bufnr)

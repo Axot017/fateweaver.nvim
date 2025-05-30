@@ -26,8 +26,8 @@ local M = {}
 ---@param callback fun(completions: string[]) Function to call with completion results
 ---@return nil
 function M.request_completion(bufnr, editable_region, cursor_pos, changes, callback)
-  local url = config.get().endpoint
-  local model = config.get().model
+  local url = config.get().completion_endpoint
+  local model = config.get().model_name
   local body = {
     model = model,
     prompt = prompt_handler.get_prompt(bufnr, editable_region, cursor_pos, changes),

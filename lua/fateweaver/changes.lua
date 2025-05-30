@@ -21,7 +21,7 @@ local tracked_buffers = {}
 --- Trims the history for a specific file to stay within configured limits
 ---@param filename string The filename to trim history for
 local function trim_changes_history(filename)
-  local max_changes = config.get().max_changes_in_context
+  local max_changes = config.get().context_opts.max_history_per_buffer
 
   while #changes_history[filename] > max_changes do
     table.remove(changes_history[filename], 1)
@@ -30,7 +30,7 @@ end
 
 --- Manages the number of tracked buffers, removing the oldest ones when limit is exceeded
 local function trim_tracked_buffers()
-  local max_tracked_buffers = config.get().max_tracked_buffers
+  local max_tracked_buffers = config.get().context_opts.max_tracked_buffers
   if #changes_history > max_tracked_buffers then
     local oldest_change = nil
     for _, changes in pairs(changes_history) do
@@ -55,7 +55,7 @@ function M.calculate_change(bufnr)
 
   if filename == "" or not tracked_buffers[filename] then
     logger.debug("Skipping change in unnamed buffer or buffer not tracked")
-    return
+    return nil
   end
 
   local current_lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
@@ -68,7 +68,7 @@ function M.calculate_change(bufnr)
   local diff = vim.diff(previous_lines_string, current_lines_string)
 
   if diff == nil or #diff == 0 then
-    return
+    return nil
   end
 
   logger.debug("Calculated diff for " .. filename .. ":\n" .. diff)
