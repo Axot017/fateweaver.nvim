@@ -262,7 +262,7 @@ local active_bufnr = -1
 local active_chain = nil
 
 ---@class fateweaver.CompletionEngine
----@field propose_completions fun(bufnr: integer, additional_change?: table): nil
+---@field on_insert fun(bufnr: integer): nil
 ---@field clear fun(): nil
 local M = {}
 
@@ -307,7 +307,7 @@ function M.accept_completion()
   active_chain = active_chain.next
 end
 
-function M.make_completion_request(bufnr, additional_diff)
+function M.request_completion(bufnr, additional_diff)
   local previous_changes = changes.get_buffer_diffs(bufnr)
   if additional_diff then
     table.insert(previous_changes, additional_diff)
@@ -332,17 +332,20 @@ function M.make_completion_request(bufnr, additional_diff)
   end)
 end
 
-function M.propose_completions(bufnr, additional_diff)
+function M.on_insert(bufnr)
   if active_chain ~= nil and active_chain.completion.bufnr == active_bufnr then
     M.show_completion(active_chain.completion)
     return
   end
 
+  M.clear()
+
   active_bufnr = bufnr
   local ms = config.get().debounce_ms
 
   debouncer.debounce(ms, active_bufnr, function()
-    M.make_completion_request(bufnr, additional_diff)
+    local additional_change = changes.calculate_change(bufnr)
+    M.request_completion(bufnr, additional_change)
   end)
 end
 
@@ -356,6 +359,11 @@ function M.clear()
     M.ui.clear(active_chain.completion.bufnr)
     active_chain = nil
   end
+end
+
+function M.set_active_buffer(bufnr)
+  active_bufnr = bufnr
+  changes.track_buffer(bufnr)
 end
 
 return M

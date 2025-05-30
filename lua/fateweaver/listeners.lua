@@ -57,13 +57,13 @@ function M.setup()
   vim.api.nvim_create_autocmd({ "BufEnter" }, {
     pattern = "*",
     callback = checked_callback(function(args)
-      changes.track_buffer(args.buf)
+      completion_engine.set_active_buffer(args.buf)
     end)
   })
 
   vim.api.nvim_create_autocmd({ "BufLeave", "InsertLeave" }, {
     pattern = "*",
-    callback = checked_callback(function(args)
+    callback = checked_callback(function(_)
       completion_engine.clear()
     end)
   })
@@ -85,9 +85,7 @@ function M.setup()
   vim.api.nvim_create_autocmd({ "TextChangedP", "TextChangedI" }, {
     pattern = "*",
     callback = checked_callback(function(args)
-      local bufnr = args.buf
-      local additional_change = changes.calculate_change(args.buf)
-      completion_engine.propose_completions(bufnr, additional_change)
+      completion_engine.on_insert(args.buf)
     end)
   })
 

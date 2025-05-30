@@ -34,7 +34,7 @@ function M.request_completion()
   ---@type number
   local bufnr = vim.api.nvim_get_current_buf()
 
-  completion_engine.propose_completions(bufnr)
+  completion_engine.request_completion(bufnr)
 end
 
 return M
