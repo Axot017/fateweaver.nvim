@@ -26,10 +26,6 @@ local config = require("fateweaver.config")
 ---@field bufnr integer
 ---@field type string
 
----@class CompletionChain
----@field completion Completion
----@field next CompletionChain|nil
-
 ---@param current_lines string[]
 ---@param proposed_lines string[]
 ---@return integer[][]
@@ -102,11 +98,11 @@ local function get_editable_region(cursor_row)
   return editable_region
 end
 
----@param proposed_completion CompletionChain
+---@param completion Completion
 ---@return nil
-local function apply_completion(proposed_completion)
-  local new_lines = proposed_completion.completion.lines_to_replace
-  local diff = proposed_completion.completion.diff
+local function apply_completion(completion)
+  local new_lines = completion.lines_to_replace
+  local diff = completion.diff
   local original_start = diff[1]
   local original_len = diff[2]
   local proposed_start = diff[3]
@@ -121,7 +117,7 @@ local function apply_completion(proposed_completion)
   end
 
   vim.api.nvim_buf_set_lines(
-    proposed_completion.completion.bufnr,
+    completion.bufnr,
     insert_start,
     insert_end,
     false,
@@ -144,28 +140,6 @@ local function get_editable_region_lines(bufnr, editable_region)
   local lines = vim.api.nvim_buf_get_lines(bufnr, editable_region.start_line - 1, editable_region.end_line, false)
 
   return lines
-end
-
----@param bufnr integer
----@param editable_region EditableRegion
----@param diffs integer[][]
----@param proposed_lines string[]
----@return Completion[]
-local function generate_completions(bufnr, editable_region, diffs, proposed_lines)
-  local completions = {}
-  for _, diff in ipairs(diffs) do
-    local lines_to_replace = added_lines(proposed_lines, diff)
-    local real_diff = adjust_diff(editable_region, diff)
-    table.insert(completions, {
-      lines_to_replace = lines_to_replace,
-      diff = real_diff,
-      bufnr = bufnr
-    })
-  end
-
-  logger.debug("Completions:\n" .. vim.inspect(completions))
-
-  return completions
 end
 
 ---@param bufnr integer
@@ -224,42 +198,32 @@ local function sort_completions(bufnr, completions)
   return result
 end
 
----@param sorted_completions Completion[]
----@return CompletionChain
-local function chain_from_sorted_completions(sorted_completions)
-  local current = {
-    completion = sorted_completions[#sorted_completions],
-    next = nil,
-  }
-  for i = 1, #sorted_completions - 1 do
-    local previous = current
-    current = {
-      completion = sorted_completions[#sorted_completions - i],
-      next = previous,
-    }
-  end
-
-  logger.debug("Completions chain:\n" .. vim.inspect(current))
-
-  return current
-end
-
 ---@param bufnr integer
 ---@param editable_region EditableRegion
 ---@param diffs integer[][]
 ---@param proposed_lines string[]
----@return CompletionChain
-local function generate_completion_chain(bufnr, editable_region, diffs, proposed_lines)
-  local completions = generate_completions(bufnr, editable_region, diffs, proposed_lines)
-  completions = sort_completions(bufnr, completions)
+---@return Completion[]
+local function generate_completions(bufnr, editable_region, diffs, proposed_lines)
+  local completions = {}
+  for _, diff in ipairs(diffs) do
+    local lines_to_replace = added_lines(proposed_lines, diff)
+    local real_diff = adjust_diff(editable_region, diff)
+    table.insert(completions, {
+      lines_to_replace = lines_to_replace,
+      diff = real_diff,
+      bufnr = bufnr
+    })
+  end
 
-  return chain_from_sorted_completions(completions)
+  completions = sort_completions(bufnr, completions)
+  logger.debug("Completions:\n" .. vim.inspect(completions))
+
+  return completions
 end
 
-
 local active_bufnr = -1
----@type CompletionChain|nil
-local active_chain = nil
+---@type Completion[]
+local active_completions = {}
 
 ---@class fateweaver.CompletionEngine
 ---@field on_insert fun(bufnr: integer): nil
@@ -292,28 +256,34 @@ end
 ---@param diffs integer[][]
 ---@param proposed_lines string[]
 ---@return nil
-function M.start_chain(bufnr, editable_region, diffs, proposed_lines)
-  local chain = generate_completion_chain(bufnr, editable_region, diffs, proposed_lines)
+function M.propose_completion(bufnr, editable_region, diffs, proposed_lines)
+  local completions = generate_completions(bufnr, editable_region, diffs, proposed_lines)
 
-  active_chain = chain
+  active_completions = completions
 
-  M.show_completion(chain.completion)
+  if not active_completions[1] then
+    return
+  end
+
+  M.show_completion(active_completions[1])
 end
 
 ---@return nil
 function M.accept_completion()
-  if not active_chain then
+  local completion_idx = 1
+  local completion = active_completions[completion_idx]
+  if not active_completions then
     logger.info("No completion to accept")
     return
   end
 
   logger.debug("Completion accepted")
 
-  M.ui.clear(active_chain.completion.bufnr)
+  M.ui.clear(completion.bufnr)
 
-  apply_completion(active_chain)
+  apply_completion(completion)
 
-  active_chain = active_chain.next
+  table.remove(active_completions, 1)
 end
 
 ---@param bufnr integer
@@ -340,15 +310,16 @@ function M.request_completion(bufnr, additional_change)
       return
     end
 
-    M.start_chain(bufnr, editable_region, diffs, completions)
+    M.propose_completion(bufnr, editable_region, diffs, completions)
   end)
 end
 
 ---@param bufnr integer
 ---@return nil
 function M.on_insert(bufnr)
-  if active_chain ~= nil and active_chain.completion.bufnr == active_bufnr then
-    M.show_completion(active_chain.completion)
+  local next_completion = active_completions[1]
+  if next_completion ~= nil and next_completion.bufnr == active_bufnr then
+    M.show_completion(next_completion)
     return
   end
 
@@ -370,9 +341,9 @@ function M.clear()
   if active_bufnr ~= nil then
     debouncer.cancel(active_bufnr)
   end
-  if active_chain then
-    M.ui.clear(active_chain.completion.bufnr)
-    active_chain = nil
+  if #active_completions ~= 0 then
+    M.ui.clear(active_completions[1].bufnr)
+    active_completions = {}
   end
 end
 
