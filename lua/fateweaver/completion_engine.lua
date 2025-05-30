@@ -112,13 +112,18 @@ local function apply_completion(proposed_completion)
   local proposed_start = diff[3]
   local proposed_len = diff[4]
 
+  local insert_start = original_start - 1
+  local insert_end = original_start + original_len - 1
 
-  local original_end = original_start + original_len - 1
+  if original_len == 0 then
+    insert_start = insert_start + 1
+    insert_end = insert_start
+  end
 
   vim.api.nvim_buf_set_lines(
     proposed_completion.completion.bufnr,
-    original_start - 1,
-    original_end,
+    insert_start,
+    insert_end,
     false,
     new_lines
   )
@@ -342,6 +347,7 @@ function M.propose_completions(bufnr, additional_diff)
 end
 
 function M.clear()
+  logger.debug("completion_engine.clear")
   M.client.cancel_request()
   if active_bufnr ~= nil then
     debouncer.cancel(active_bufnr)

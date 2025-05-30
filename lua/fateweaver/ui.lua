@@ -21,7 +21,6 @@ function M.show_inline_completions(completion)
   logger.debug("ui.show_inline_completions")
 
   local bufnr = completion.bufnr
-  M.clear(bufnr)
 
   local cursor_pos = vim.api.nvim_win_get_cursor(0)
 
@@ -56,7 +55,6 @@ function M.show_diff_completions(completion)
   logger.debug("ui.show_diff_completions")
 
   local bufnr = completion.bufnr
-  M.clear(bufnr)
 
   local diff = completion.diff
 
@@ -65,10 +63,12 @@ function M.show_diff_completions(completion)
 
   local original_end = original_start + original_len - 1
 
-  vim.api.nvim_buf_set_extmark(bufnr, ns_id, original_start - 1, 0, {
-    line_hl_group = "DiffDelete",
-    end_row = original_end - 1,
-  })
+  if original_len ~= 0 then
+    vim.api.nvim_buf_set_extmark(bufnr, ns_id, original_start - 1, 0, {
+      line_hl_group = "DiffDelete",
+      end_row = original_end - 1,
+    })
+  end
 
   local lines_to_replace = completion.lines_to_replace
 
@@ -77,8 +77,13 @@ function M.show_diff_completions(completion)
     table.insert(virtual_lines, { { line, "DiffAdd" } })
   end
 
+  local insert_at = original_end - 1
+  if original_len == 0 then
+    insert_at = original_start - 1
+  end
+
   if #virtual_lines > 0 then
-    vim.api.nvim_buf_set_extmark(bufnr, ns_id, original_end - 1, 0, {
+    vim.api.nvim_buf_set_extmark(bufnr, ns_id, insert_at, 0, {
       virt_lines = virtual_lines,
       virt_lines_above = false,
     })
