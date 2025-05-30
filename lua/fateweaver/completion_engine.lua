@@ -264,6 +264,9 @@ local active_chain = nil
 ---@class fateweaver.CompletionEngine
 ---@field on_insert fun(bufnr: integer): nil
 ---@field clear fun(): nil
+---@field set_active_buffer fun(bufnr: integer): nil
+---@field setup fun(ui: fateweaver.UI, client: fateweaver.Client)
+---@field request_completion fun(bufnr: integer, additional_change: Change)
 local M = {}
 
 ---@param ui fateweaver.UI
@@ -284,6 +287,11 @@ function M.show_completion(completion)
   end
 end
 
+---@param bufnr integer
+---@param editable_region EditableRegion
+---@param diffs integer[][]
+---@param proposed_lines string[]
+---@return nil
 function M.start_chain(bufnr, editable_region, diffs, proposed_lines)
   local chain = generate_completion_chain(bufnr, editable_region, diffs, proposed_lines)
 
@@ -292,6 +300,7 @@ function M.start_chain(bufnr, editable_region, diffs, proposed_lines)
   M.show_completion(chain.completion)
 end
 
+---@return nil
 function M.accept_completion()
   if not active_chain then
     logger.info("No completion to accept")
@@ -307,10 +316,13 @@ function M.accept_completion()
   active_chain = active_chain.next
 end
 
-function M.request_completion(bufnr, additional_diff)
+---@param bufnr integer
+---@param additional_change Change
+---@return nil
+function M.request_completion(bufnr, additional_change)
   local previous_changes = changes.get_buffer_diffs(bufnr)
-  if additional_diff then
-    table.insert(previous_changes, additional_diff)
+  if additional_change then
+    table.insert(previous_changes, additional_change)
   end
   local cursor_pos = vim.api.nvim_win_get_cursor(0)
   local editable_region = get_editable_region(cursor_pos[1])
@@ -332,6 +344,8 @@ function M.request_completion(bufnr, additional_diff)
   end)
 end
 
+---@param bufnr integer
+---@return nil
 function M.on_insert(bufnr)
   if active_chain ~= nil and active_chain.completion.bufnr == active_bufnr then
     M.show_completion(active_chain.completion)
@@ -349,6 +363,7 @@ function M.on_insert(bufnr)
   end)
 end
 
+---@return nil
 function M.clear()
   logger.debug("completion_engine.clear")
   M.client.cancel_request()
@@ -361,6 +376,8 @@ function M.clear()
   end
 end
 
+---@param bufnr integer
+---@return nil
 function M.set_active_buffer(bufnr)
   active_bufnr = bufnr
   changes.track_buffer(bufnr)

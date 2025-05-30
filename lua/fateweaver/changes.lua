@@ -6,7 +6,7 @@ local config = require("fateweaver.config")
 ---@class fateweaver.Changes
 ---@field track_buffer fun(bufnr: integer): nil
 ---@field save_change fun(bufnr: integer): nil
----@field calculate_change fun(bufnr: integer): table|nil
+---@field calculate_change fun(bufnr: integer): Change
 local M = {}
 
 ---@class Change
