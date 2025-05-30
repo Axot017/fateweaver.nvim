@@ -1,11 +1,7 @@
 ---@type fateweaver.Logger
 local logger = require("fateweaver.logger")
----@type fateweaver.Config
-local config = require("fateweaver.config")
 ---@type fateweaver.Changes
 local changes = require("fateweaver.changes")
----@type fateweaver.Debouncer
-local debouncer = require("fateweaver.debouncer")
 ---@type fateweaver.CompletionEngine
 local completion_engine = require("fateweaver.completion_engine")
 
@@ -68,7 +64,6 @@ function M.setup()
   vim.api.nvim_create_autocmd({ "BufLeave", "InsertLeave" }, {
     pattern = "*",
     callback = checked_callback(function(args)
-      debouncer.cancel(args.buf)
       completion_engine.clear()
     end)
   })
@@ -90,17 +85,9 @@ function M.setup()
   vim.api.nvim_create_autocmd({ "TextChangedP", "TextChangedI" }, {
     pattern = "*",
     callback = checked_callback(function(args)
-      if vim.g.fateweaver_pause_completion then
-        vim.g.fateweaver_pause_completion = false
-        return
-      end
-
-      local debounce_time = config.get().debounce_ms
       local bufnr = args.buf
-      debouncer.debounce(debounce_time, args.buf, function()
-        local additional_change = changes.calculate_change(args.buf)
-        completion_engine.propose_completions(bufnr, additional_change)
-      end)
+      local additional_change = changes.calculate_change(args.buf)
+      completion_engine.propose_completions(bufnr, additional_change)
     end)
   })
 

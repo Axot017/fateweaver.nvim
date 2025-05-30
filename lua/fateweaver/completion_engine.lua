@@ -2,6 +2,10 @@
 local changes = require("fateweaver.changes")
 ---@type fateweaver.Logger
 local logger = require("fateweaver.logger")
+---@type fateweaver.Debouncer
+local debouncer = require("fateweaver.debouncer")
+---@type fateweaver.Config
+local config = require("fateweaver.config")
 
 ---@class fateweaver.Client
 ---@field request_completion fun(bufnr: integer, editable_region: EditableRegion, cursor_pos: integer[], changes: Change[], callback: fun(completions: string[])): nil
@@ -177,8 +181,9 @@ local function sort_completions(bufnr, completions)
 
     local original_start = diff[1]
     local original_len = diff[2]
+    local proposed_len = diff[4]
 
-    if original_start == cursor_line and original_len == 1 then
+    if original_start == cursor_line and original_len == 1 and proposed_len > 0 then
       local original = current_lines[original_start]
       local proposed = completion.lines_to_replace[1]
 
@@ -247,7 +252,7 @@ local function generate_completion_chain(bufnr, editable_region, diffs, proposed
 end
 
 
-local request_bufnr = -1
+local active_bufnr = -1
 ---@type CompletionChain|nil
 local active_chain = nil
 
@@ -297,13 +302,7 @@ function M.accept_completion()
   active_chain = active_chain.next
 end
 
-function M.propose_completions(bufnr, additional_diff)
-  if active_chain ~= nil and active_chain.completion.bufnr == request_bufnr then
-    M.show_completion(active_chain.completion)
-    return
-  end
-
-  request_bufnr = bufnr
+function M.make_completion_request(bufnr, additional_diff)
   local previous_changes = changes.get_buffer_diffs(bufnr)
   if additional_diff then
     table.insert(previous_changes, additional_diff)
@@ -313,7 +312,7 @@ function M.propose_completions(bufnr, additional_diff)
 
 
   M.client.request_completion(bufnr, editable_region, cursor_pos, previous_changes, function(completions)
-    if request_bufnr ~= bufnr then
+    if active_bufnr ~= bufnr then
       return
     end
 
@@ -328,8 +327,25 @@ function M.propose_completions(bufnr, additional_diff)
   end)
 end
 
+function M.propose_completions(bufnr, additional_diff)
+  if active_chain ~= nil and active_chain.completion.bufnr == active_bufnr then
+    M.show_completion(active_chain.completion)
+    return
+  end
+
+  active_bufnr = bufnr
+  local ms = config.get().debounce_ms
+
+  debouncer.debounce(ms, active_bufnr, function()
+    M.make_completion_request(bufnr, additional_diff)
+  end)
+end
+
 function M.clear()
   M.client.cancel_request()
+  if active_bufnr ~= nil then
+    debouncer.cancel(active_bufnr)
+  end
   if active_chain then
     M.ui.clear(active_chain.completion.bufnr)
     active_chain = nil
