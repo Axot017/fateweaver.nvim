@@ -84,19 +84,17 @@ local function get_editable_region(cursor_row)
   local context_opts = config.get().context_opts
   local editable_region_before_cursor = context_opts.editable_region_before_cursor
   local editable_region_after_cursor = context_opts.editable_region_after_cursor
-
-  local buf_start = 1
-  local buf_end = vim.api.nvim_buf_line_count(0)
-
+  local win_top = vim.fn.line('w0')
+  local win_bottom = vim.fn.line('w$')
   local editable_region_top = cursor_row - editable_region_before_cursor
-  if editable_region_top < buf_start then
-    editable_region_top = buf_start
+  if editable_region_top < win_top then
+    editable_region_top = win_top
+  end
+  local editable_region_bottom = cursor_row + editable_region_after_cursor
+  if editable_region_bottom > win_bottom then
+    editable_region_bottom = win_bottom
   end
 
-  local editable_region_bottom = cursor_row + editable_region_after_cursor
-  if editable_region_bottom > buf_end then
-    editable_region_bottom = buf_end
-  end
 
   local editable_region = { start_line = editable_region_top, end_line = editable_region_bottom }
   return editable_region
