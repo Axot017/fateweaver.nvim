@@ -22,10 +22,6 @@ function M.setup(opts)
   completion_engine.setup(ui, client)
 
   listeners.setup()
-
-  -- TODO: Add to config
-  vim.keymap.set('i', '<C-y>', function() require("fateweaver.completion_engine").accept_completion() end,
-    { silent = true })
 end
 
 ---Requests completions for the current buffer
@@ -35,6 +31,16 @@ function M.request_completion()
   local bufnr = vim.api.nvim_get_current_buf()
 
   completion_engine.request_completion(bufnr)
+end
+
+---@return nil
+function M.accept_completion()
+  completion_engine.accept_completion()
+end
+
+---@return nil
+function M.dismiss_completion()
+  completion_engine.clear()
 end
 
 return M
