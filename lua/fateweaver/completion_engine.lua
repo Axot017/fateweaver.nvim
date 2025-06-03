@@ -223,7 +223,7 @@ local function generate_completions(bufnr, editable_region, diffs, proposed_line
   return completions
 end
 
-local events_to_ingore = 0
+local accepted_completions = 0
 
 local active_bufnr = -1
 ---@type Completion[]
@@ -285,7 +285,7 @@ function M.accept_completion()
 
   M.ui.clear(completion.bufnr)
 
-  events_to_ingore = events_to_ingore + 1
+  accepted_completions = accepted_completions + 1
   table.remove(active_completions, 1)
 
   apply_completion(completion)
@@ -322,18 +322,17 @@ end
 ---@param bufnr integer
 ---@return nil
 function M.on_insert(bufnr)
-  local is_after_completion_accept = events_to_ingore ~= 0
+  local is_after_completion_accept = accepted_completions ~= 0
 
   local next_completion = active_completions[1]
   if next_completion ~= nil and next_completion.bufnr == active_bufnr and is_after_completion_accept then
-    events_to_ingore = events_to_ingore - 1
+    accepted_completions = accepted_completions - 1
     M.show_completion(next_completion)
     return
   end
 
   if is_after_completion_accept then
-    events_to_ingore = events_to_ingore - 1
-    return
+    accepted_completions = accepted_completions - 1
   end
 
   M.clear()

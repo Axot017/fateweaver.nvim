@@ -11,6 +11,7 @@
 ---@field logger_fn fun(msg: string): nil Function used for logging
 ---@field context_opts Config.ContextOpts Context configuration for LLM
 ---@field completion_endpoint string API endpoint URL for generation
+---@field api_key string|fun(): string|nil API key for the AI model or a function to retrieve it.
 ---@field model_name string AI model identifier to use
 ---@field debounce_ms integer Debounce time in milliseconds
 
@@ -31,6 +32,7 @@ local _default_config = {
     editable_region_after_cursor = 30
   },
   completion_endpoint = "http://localhost:11434/v1/completions",
+  api_key = nil,
   model_name = "hf.co/bartowski/zed-industries_zeta-GGUF:Q4_K_M",
   debounce_ms = 1000
 }

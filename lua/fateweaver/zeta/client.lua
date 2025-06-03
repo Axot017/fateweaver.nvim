@@ -45,17 +45,26 @@ function M.request_completion(bufnr, editable_region, cursor_pos, changes, callb
 
   job_id = job_id + 1
   local current_job_id = job_id
+  local headers = {}
+  headers["Content-Type"] = "application/json"
+
+
+  local api_key = config.get().api_key
+  if api_key then
+    if type(api_key) == 'string' then
+      headers["Authorization"] = api_key
+    elseif type(api_key) == 'function' then
+      headers["Authorization"] = api_key()
+    end
+  end
 
   request_job = curl.post(url, {
     body = vim.json.encode(body),
-    headers = {
-      content_type = "application/json",
-    },
+    headers = headers,
     callback = function(res)
       if res.status ~= 200 then
         logger.warn("Received error: " .. vim.inspect(res))
       end
-
       local reponse_body = vim.json.decode(res.body)
       local response = reponse_body.choices[1].text
       local proposed_completions = prompt_handler.get_completion_lines(response)
