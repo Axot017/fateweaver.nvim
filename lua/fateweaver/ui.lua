@@ -48,10 +48,10 @@ end
 ---@param to integer
 ---@param lines string[]
 ---@return nil
-function M.show_diff_completions(bufnr, from, to, lines)
-  vim.api.nvim_buf_set_extmark(bufnr, ns_id, from, 0, {
+function M.show_diff(bufnr, from, to, lines)
+  vim.api.nvim_buf_set_extmark(bufnr, ns_id, from - 1, 0, {
     line_hl_group = "DiffDelete",
-    end_row = to,
+    end_row = to - 2,
   })
 
   local virtual_lines = {}
@@ -59,21 +59,23 @@ function M.show_diff_completions(bufnr, from, to, lines)
     table.insert(virtual_lines, { { line, "DiffAdd" } })
   end
 
-  if #virtual_lines > 0 then
-    vim.api.nvim_buf_set_extmark(bufnr, ns_id, to, 0, {
-      virt_lines = virtual_lines,
-      virt_lines_above = false,
-    })
-  end
+  vim.api.nvim_buf_set_extmark(bufnr, ns_id, to - 2, 0, {
+    virt_lines = virtual_lines,
+    virt_lines_above = false,
+  })
 end
 
 ---@param bufnr integer
 ---@param position integer
----@param lines string
+---@param lines string[]
 ---@return nil
 function M.show_addition(bufnr, position, lines)
-  vim.api.nvim_buf_set_extmark(bufnr, ns_id, position, 0, {
-    virt_text = { { lines, "DiffAdd" } },
+  local virtual_lines = {}
+  for _, line in ipairs(lines) do
+    table.insert(virtual_lines, { { line, "DiffAdd" } })
+  end
+  vim.api.nvim_buf_set_extmark(bufnr, ns_id, position - 1, 0, {
+    virt_lines = virtual_lines,
     virt_lines_above = false,
   })
 end
@@ -83,9 +85,9 @@ end
 ---@param to integer
 ---@return nil
 function M.show_deletion(bufnr, from, to)
-  vim.api.nvim_buf_set_extmark(bufnr, ns_id, from, 0, {
+  vim.api.nvim_buf_set_extmark(bufnr, ns_id, from - 1, 0, {
     line_hl_group = "DiffDelete",
-    end_row = to,
+    end_row = to - 2,
   })
 end
 

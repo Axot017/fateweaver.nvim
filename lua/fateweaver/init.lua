@@ -7,7 +7,7 @@ local completion_engine = require("fateweaver.completion_engine")
 ---@type fateweaver.UI
 local ui = require("fateweaver.ui")
 ---@type fateweaver.Client
-local client = require("fateweaver.zeta.client")
+local client = require("fateweaver.client")
 
 ---@type table
 local M = {}
