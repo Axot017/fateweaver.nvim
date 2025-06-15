@@ -49,8 +49,6 @@ require("fateweaver").setup({
     max_history_per_buffer = 3,       -- Maximum number of recent changes to keep in history per buffer
     context_before_cursor = 30,       -- Number of lines before cursor to include as context for the LLM
     context_after_cursor = 50,        -- Number of lines after cursor to include as context for the LLM
-    editable_region_before_cursor = 10, -- Number of lines before cursor that LLM is allowed to edit
-    editable_region_after_cursor = 30,  -- Number of lines after cursor that LLM is allowed to edit
   },
   
   -- Zeta model configuration

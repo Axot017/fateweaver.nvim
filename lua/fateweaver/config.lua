@@ -3,8 +3,6 @@
 ---@field max_history_per_buffer integer Maximum number of changes to keep in history per buffer
 ---@field context_before_cursor integer Number of lines to include before cursor for context
 ---@field context_after_cursor integer Number of lines to include after cursor for context
----@field editable_region_before_cursor integer Number of lines before cursor that LLM can edit
----@field editable_region_after_cursor integer Number of lines after cursor that LLM can edit
 
 ---@class Config
 ---@field log_level string Level of logging ("ERROR", "WARN", "INFO", "DEBUG")
@@ -28,8 +26,6 @@ local _default_config = {
     max_history_per_buffer = 3,
     context_before_cursor = 30,
     context_after_cursor = 50,
-    editable_region_before_cursor = 10,
-    editable_region_after_cursor = 30
   },
   completion_endpoint = "http://localhost:11434/v1/completions",
   api_key = nil,
