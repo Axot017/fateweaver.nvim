@@ -81,7 +81,8 @@ local function response_to_completions(response)
         search = search_block,
         replace = replace_block
       })
-      logger.debug("Found block:\nSearch: " .. search_block .. "\nReplace: " .. replace_block)
+      logger.debug("Found block:\n<<<<<<< SEARCH\n" ..
+      search_block .. "\n=======\n" .. replace_block .. "\n>>>>>>> REPLACE")
     else
       logger.info("Ignoring block with identical search and replace: " .. search_block)
     end
