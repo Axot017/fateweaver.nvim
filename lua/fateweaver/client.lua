@@ -16,7 +16,7 @@ local request_job = nil
 local job_id = 0
 
 local prompt_template = [[### Instruction:
-You are a code completion assistant. Your task is to analyze code edits and excerpt, then suggest edits to that code using search/replace blocks
+You are a code completion assistant. Your task is to analyze code excerpt and recent edits, then suggest edits to that code using search/replace blocks
 
 ### Code Excerpt:
 
@@ -24,11 +24,11 @@ You are a code completion assistant. Your task is to analyze code edits and exce
 %s
 ```
 
-### Code Edits:
+### Recent Edits:
 
 %s
 
-### Response:
+### Suggestions:
 
 ]]
 
@@ -82,7 +82,7 @@ local function response_to_completions(response)
         replace = replace_block
       })
       logger.debug("Found block:\n<<<<<<< SEARCH\n" ..
-      search_block .. "\n=======\n" .. replace_block .. "\n>>>>>>> REPLACE")
+        search_block .. "\n=======\n" .. replace_block .. "\n>>>>>>> REPLACE")
     else
       logger.info("Ignoring block with identical search and replace: " .. search_block)
     end

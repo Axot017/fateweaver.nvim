@@ -64,8 +64,7 @@ function M.calculate_change(bufnr)
   local previous_lines = tracked_buffers[filename].lines
   local previous_lines_string = table.concat(previous_lines, "\n")
 
-
-  local diff = vim.diff(previous_lines_string, current_lines_string)
+  local diff = vim.diff(previous_lines_string, current_lines_string, { ctxlen = 3 })
 
   if diff == nil or #diff == 0 then
     return nil
