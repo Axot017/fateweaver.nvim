@@ -8,7 +8,7 @@ local debouncer = require("fateweaver.debouncer")
 local config = require("fateweaver.config")
 
 ---@class fateweaver.Client
----@field request_completion fun(bufnr: integer, changes: Change[], callback: fun(completions: Completion[])): nil
+---@field request_completion fun(bufnr: integer, changes: Changes, callback: fun(completions: Completion[])): nil
 ---@field cancel_request fun(): nil
 
 ---@class fateweaver.UI
@@ -33,7 +33,7 @@ local active_completions = {}
 ---@field clear fun(): nil
 ---@field set_active_buffer fun(bufnr: integer): nil
 ---@field setup fun(ui: fateweaver.UI, client: fateweaver.Client)
----@field request_completion fun(bufnr: integer, additional_change: Change|nil)
+---@field request_completion fun(bufnr: integer)
 local M = {}
 
 ---@param ui fateweaver.UI
@@ -198,16 +198,15 @@ function M.accept_completion()
 end
 
 ---@param bufnr integer
----@param additional_change Change
 ---@return nil
-function M.request_completion(bufnr, additional_change)
-  local previous_changes = changes.get_buffer_diffs(bufnr)
-  if additional_change then
-    table.insert(previous_changes, additional_change)
+function M.request_completion(bufnr)
+  local diff = changes.get_diffs(bufnr)
+  if diff == nil then
+    logger.debug("No diff")
+    return
   end
 
-
-  M.client.request_completion(bufnr, previous_changes, function(completions)
+  M.client.request_completion(bufnr, diff, function(completions)
     if active_bufnr ~= bufnr then
       return
     end
@@ -239,8 +238,7 @@ function M.on_insert(bufnr)
   local ms = config.get().debounce_ms
 
   debouncer.debounce(ms, active_bufnr, function()
-    local additional_change = changes.calculate_change(bufnr)
-    M.request_completion(bufnr, additional_change)
+    M.request_completion(bufnr)
   end)
 end
 
@@ -260,7 +258,7 @@ end
 ---@return nil
 function M.set_active_buffer(bufnr)
   active_bufnr = bufnr
-  changes.track_buffer(bufnr)
+  changes.init_buffer(bufnr)
 end
 
 return M

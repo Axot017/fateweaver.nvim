@@ -32,21 +32,11 @@ You are a code completion assistant. Your task is to analyze code excerpt and re
 
 ]]
 
----@param changes Change[]
-local function formatted_diff(changes)
-  local diffs = {}
-  for _, change in ipairs(changes) do
-    table.insert(diffs, change.diff)
-  end
-  return table.concat(diffs, "\n")
-end
-
---- Constructs the full prompt for the LLM
----@param bufnr integer The buffer number
----@param changes Change[] Array of recorded changes to provide as context
----@return string prompt The complete prompt for the LLM
+---@param bufnr integer
+---@param changes Changes
+---@return string prompt
 local function get_prompt(bufnr, changes)
-  local diff = formatted_diff(changes)
+  local diff = changes.diff
 
   local cursor_pos = vim.api.nvim_win_get_cursor(0)
   local cursor_line = cursor_pos[1]
@@ -93,10 +83,9 @@ end
 
 local M = {}
 
----Makes a request to the completion API
----@param bufnr integer The buffer number to get completion for
----@param changes Change[] Array of recorded changes to provide as context
----@param callback fun(completions: string[]) Function to call with completion results
+---@param bufnr integer
+---@param changes Changes
+---@param callback fun(completions: string[])
 ---@return nil
 function M.request_completion(bufnr, changes, callback)
   local url = config.get().completion_endpoint
