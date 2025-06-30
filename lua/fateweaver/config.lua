@@ -29,7 +29,7 @@ local _default_config = {
   },
   completion_endpoint = "http://localhost:11434/v1/completions",
   api_key = nil,
-  model_name = "hf.co/Axottee/fateweaver-8B:Q4_K_M",
+  model_name = "hf.co/Axottee/fateweaver-7B:Q4_K_M",
   debounce_ms = 300
 }
 

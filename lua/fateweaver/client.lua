@@ -18,15 +18,16 @@ local job_id = 0
 local prompt_template = [[### Instruction:
 You are a code completion assistant. Your task is to analyze code excerpt and recent edits, then suggest edits to that code using search/replace blocks
 
+
+### Recent Edits:
+
+%s
+
 ### Code Excerpt:
 
 ```%s
 %s
 ```
-
-### Recent Edits:
-
-%s
 
 ### Suggestions:
 
@@ -51,7 +52,7 @@ local function get_prompt(bufnr, changes)
   local lines = vim.api.nvim_buf_get_lines(bufnr, first_line, last_line + 1, false)
 
   local buffer_name = vim.api.nvim_buf_get_name(bufnr)
-  local prompt = string.format(prompt_template, buffer_name, table.concat(lines, "\n"), diff)
+  local prompt = string.format(prompt_template, diff, buffer_name, table.concat(lines, "\n"))
 
   logger.debug("Prompt:\n\n" .. prompt)
 
@@ -128,6 +129,7 @@ function M.request_completion(bufnr, changes, callback)
       end
       local reponse_body = vim.json.decode(res.body)
       local response = reponse_body.choices[1].text
+      logger.debug("Response:\n" .. vim.inspect(response))
       local proposed_completions = response_to_completions(response)
 
       if current_job_id == job_id then
