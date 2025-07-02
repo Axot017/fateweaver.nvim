@@ -82,6 +82,9 @@ local function response_to_completions(response)
   return blocks
 end
 
+---@class fateweaver.Client
+---@field request_completion fun(bufnr: integer, changes: Changes, callback: fun(completions: Completion[])): nil
+---@field cancel_request fun(): nil
 local M = {}
 
 ---@param bufnr integer
@@ -129,7 +132,7 @@ function M.request_completion(bufnr, changes, callback)
       end
       local reponse_body = vim.json.decode(res.body)
       local response = reponse_body.choices[1].text
-      logger.debug("Response:\n" .. vim.inspect(response))
+      logger.debug("Response:\n" .. response)
       local proposed_completions = response_to_completions(response)
 
       if current_job_id == job_id then

@@ -8,6 +8,8 @@ local completion_engine = require("fateweaver.completion_engine")
 local ui = require("fateweaver.ui")
 ---@type fateweaver.Client
 local client = require("fateweaver.client")
+---@type fateweaver.SamplesRepository
+local samples_repository = require("fateweaver.samples_repository")
 
 ---@type table
 local M = {}
@@ -19,7 +21,7 @@ function M.setup(opts)
 
   config.setup(opts)
 
-  completion_engine.setup(ui, client)
+  completion_engine.setup(ui, client, samples_repository)
 
   listeners.setup()
 end
@@ -41,6 +43,16 @@ end
 ---@return nil
 function M.dismiss_completion()
   completion_engine.clear()
+end
+
+function M.save_sample()
+  local bufnr = vim.api.nvim_get_current_buf()
+
+  completion_engine.save_sample(bufnr)
+end
+
+function M.test_sample()
+  samples_repository.save_sample({}, "", {})
 end
 
 return M

@@ -7,16 +7,6 @@ local debouncer = require("fateweaver.debouncer")
 ---@type fateweaver.Config
 local config = require("fateweaver.config")
 
----@class fateweaver.Client
----@field request_completion fun(bufnr: integer, changes: Changes, callback: fun(completions: Completion[])): nil
----@field cancel_request fun(): nil
-
----@class fateweaver.UI
----@field show_inline_completions fun(bufnr: integer, lines: string[]): nil
----@field show_addition fun(bufnr: integer, position: integer, lines: string[]): nil
----@field show_deletion fun(bufnr: integer, from: integer, to: integer): nil
----@field show_diff fun(bufnr: integer, from: integer, to: integer, lines: string[]): nil
----@field clear fun(bufnr: integer): nil
 
 ---@class Completion
 ---@field search string
@@ -32,16 +22,19 @@ local active_completions = {}
 ---@field on_insert fun(bufnr: integer): nil
 ---@field clear fun(): nil
 ---@field set_active_buffer fun(bufnr: integer): nil
----@field setup fun(ui: fateweaver.UI, client: fateweaver.Client)
+---@field setup fun(ui: fateweaver.UI, client: fateweaver.Client, sample_repository: fateweaver.SamplesRepository): nil
 ---@field request_completion fun(bufnr: integer)
+---@field save_sample fun(bufnr: integer)
 local M = {}
 
 ---@param ui fateweaver.UI
 ---@param client fateweaver.Client
+---@param sample_repository fateweaver.SamplesRepository
 ---@return nil
-function M.setup(ui, client)
+function M.setup(ui, client, sample_repository)
   M.ui = ui
   M.client = client
+  M.sample_repository = sample_repository
 end
 
 function M.show_next_completion(bufnr)
@@ -259,6 +252,10 @@ end
 function M.set_active_buffer(bufnr)
   active_bufnr = bufnr
   changes.init_buffer(bufnr)
+end
+
+function M.save_sample(bufnr)
+  -- TODO
 end
 
 return M

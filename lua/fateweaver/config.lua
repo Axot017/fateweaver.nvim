@@ -12,6 +12,7 @@
 ---@field api_key string|fun(): string|nil API key for the AI model or a function to retrieve it.
 ---@field model_name string AI model identifier to use
 ---@field debounce_ms integer Debounce time in milliseconds
+---@field samples_file_path string|nil Path to a file where smaples will be saved
 
 ---@class fateweaver.Config
 ---@field setup fun(Config): nil
@@ -30,7 +31,8 @@ local _default_config = {
   completion_endpoint = "http://localhost:11434/v1/completions",
   api_key = nil,
   model_name = "hf.co/Axottee/fateweaver-7B:Q4_K_M",
-  debounce_ms = 300
+  debounce_ms = 300,
+  samples_file_path = nil,
 }
 
 ---@type Config

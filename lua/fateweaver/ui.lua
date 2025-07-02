@@ -1,6 +1,12 @@
 ---@type fateweaver.Logger
 local logger = require("fateweaver.logger")
 
+---@class fateweaver.UI
+---@field show_inline_completions fun(bufnr: integer, lines: string[]): nil
+---@field show_addition fun(bufnr: integer, position: integer, lines: string[]): nil
+---@field show_deletion fun(bufnr: integer, from: integer, to: integer): nil
+---@field show_diff fun(bufnr: integer, from: integer, to: integer, lines: string[]): nil
+---@field clear fun(bufnr: integer): nil
 local M = {}
 
 ---@type integer Namespace ID for virtual text and virtual lines
