@@ -22,19 +22,19 @@ local active_completions = {}
 ---@field on_insert fun(bufnr: integer): nil
 ---@field clear fun(): nil
 ---@field set_active_buffer fun(bufnr: integer): nil
----@field setup fun(ui: fateweaver.UI, client: fateweaver.Client, sample_repository: fateweaver.SamplesRepository): nil
+---@field setup fun(ui: fateweaver.UI, client: fateweaver.Client, sample_repository: fateweaver.SamplesManager): nil
 ---@field request_completion fun(bufnr: integer)
 ---@field save_sample fun(bufnr: integer)
 local M = {}
 
 ---@param ui fateweaver.UI
 ---@param client fateweaver.Client
----@param sample_repository fateweaver.SamplesRepository
+---@param sample_repository fateweaver.SamplesManager
 ---@return nil
 function M.setup(ui, client, sample_repository)
   M.ui = ui
   M.client = client
-  M.sample_repository = sample_repository
+  M.samples_manager = sample_repository
 end
 
 function M.show_next_completion(bufnr)
@@ -255,7 +255,20 @@ function M.set_active_buffer(bufnr)
 end
 
 function M.save_sample(bufnr)
-  -- TODO
+  if #active_completions == 0 then
+    logger.info("No completions to save as sample")
+    return
+  end
+
+  local diff = changes.get_diffs(bufnr)
+  local buf_lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+  local buf_content = table.concat(buf_lines, "\n")
+
+  M.samples_manager.save_sample(
+    active_completions,
+    buf_content,
+    diff
+  )
 end
 
 return M
