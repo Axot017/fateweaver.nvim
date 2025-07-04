@@ -255,11 +255,6 @@ function M.set_active_buffer(bufnr)
 end
 
 function M.save_sample(bufnr)
-  if #active_completions == 0 then
-    logger.info("No completions to save as sample")
-    return
-  end
-
   local diff = changes.get_diffs(bufnr)
   local buf_lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
   local buf_content = table.concat(buf_lines, "\n")
