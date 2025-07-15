@@ -40,7 +40,8 @@ function M.save_sample(completions, file_content, changes)
     completion_content,
   }
   local content = table.concat(content_blocks, delimiter)
-  content = content .. delimiter .. "<Put expected result here>"
+  local placeholder = string.format(completion_template, "", "")
+  content = content .. delimiter .. placeholder .. "\n"
 
   local buffer = vim.api.nvim_create_buf(false, true)
 
@@ -59,6 +60,7 @@ function M.save_sample(completions, file_content, changes)
     width = default_width,
     height = default_height,
     style = "minimal",
+    border = "rounded",
     row = math.floor((vim.o.lines - default_height) / 2),
     col = math.floor((vim.o.columns - default_width) / 2),
   }
