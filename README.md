@@ -1,11 +1,11 @@
 # fateweaver.nvim
 
-A Neovim plugin that provides intelligent code completion and predicts future code changes using the local open-source Zeta LLM model from Zed Industries.
+A Neovim plugin that provides intelligent code completion and predicts future code changes using a local LLM served over Ollama.
 
 ## Requirements
 
 - **Neovim 0.8.0+**
-- **Zeta LLM model**: The plugin requires a local Zeta model endpoint (default: `http://localhost:11434/v1/completions`)
+- **Local chat-capable LLM**: The plugin expects a model served by Ollama's chat endpoint by default (`http://localhost:11434/api/chat`)
 
 ## Installation
 
@@ -51,9 +51,9 @@ require("fateweaver").setup({
     context_after_cursor = 50,        -- Number of lines after cursor to include as context for the LLM
   },
   
-  -- Zeta model configuration
-  completion_endpoint = "http://localhost:11434/v1/completions",
-  model_name = "hf.co/bartowski/zed-industries_zeta-GGUF:Q4_K_M",
+  -- Model configuration
+  completion_endpoint = "http://localhost:11434/api/chat",
+  model_name = "hf.co/Axottee/fateweaver-7B:Q4_K_M",
   
   -- Performance options
   debounce_ms = 1000, -- Debounce time for completion requests
@@ -84,34 +84,40 @@ vim.keymap.set("i", "<C-y>", require("fateweaver").accept_completion, { desc = "
 vim.keymap.set("i", "<C-x>", require("fateweaver").dismiss_completion, { desc = "Dismiss completion" })
 ```
 
-## Setting Up Zeta Model
+## Setting Up a Model
 
-The plugin requires a local server that serves the Zeta model via OpenAI-compatible API. Below is an example using Ollama, but you can use any method you prefer.
+The plugin now sends requests in chat format so they match Fateweaver-style training data:
+
+- `system`: `You are a code completion assistant...`
+- `user`: `### Recent Edits:` + diff + `### Code Excerpt:` + fenced code excerpt
+
+By default it uses Ollama's native chat endpoint, but OpenAI-compatible chat endpoints should also work.
 
 ### Example: Using Ollama
 
 1. **Install Ollama**: Follow the [Ollama installation guide](https://ollama.ai/)
-2. **Download Zeta model**: 
+2. **Download your model**:
    ```bash
-   ollama pull hf.co/bartowski/zed-industries_zeta-GGUF:Q4_K_M
+   ollama pull hf.co/Axottee/fateweaver-7B:Q4_K_M
    ```
+   Replace this with your own trained model tag if needed.
 3. **Start Ollama server**:
    ```bash
    ollama serve
    ```
 
-The plugin will automatically connect to the Ollama endpoint at `http://localhost:11434/v1/completions`.
+The plugin will automatically connect to the Ollama chat endpoint at `http://localhost:11434/api/chat`.
 
 ### Alternative Methods
 
-You can also use other inference engines that provide OpenAI-compatible APIs:
+You can also use other inference engines that provide chat-compatible APIs:
 
 - **llama.cpp**
 - **vLLM**
 - **llamafile**
 - **Any other OpenAI-compatible server**
 
-Simply update the `completion_endpoint` in your configuration to point to your chosen inference server.
+Simply update the `completion_endpoint` in your configuration to point to your chosen inference server. For OpenAI-compatible servers, use a chat endpoint such as `/v1/chat/completions`.
 
 ## Contributing
 
@@ -123,5 +129,5 @@ MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Acknowledgments
 
-- **Zed Industries** for the open-source Zeta LLM model
+- Local open-weight code models and the Ollama ecosystem
 - **Cursor** for inspiration on AI-powered code editing
