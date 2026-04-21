@@ -93,6 +93,7 @@ function M.save_sample(completions, file_content, changes)
     logger.debug("Saving sameple with content:\n" .. saved_content)
 
     local dto = {
+      excerpt = sections[1],
       excrept = sections[1],
       diff = sections[2],
       rejected = sections[3],

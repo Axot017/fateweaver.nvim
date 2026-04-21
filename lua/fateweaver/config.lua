@@ -8,7 +8,7 @@
 ---@field log_level string Level of logging ("ERROR", "WARN", "INFO", "DEBUG")
 ---@field logger_fn fun(msg: string): nil Function used for logging
 ---@field context_opts Config.ContextOpts Context configuration for LLM
----@field completion_endpoint string API endpoint URL for generation
+---@field completion_endpoint string API endpoint URL for completions/chat
 ---@field api_key string|fun(): string|nil API key for the AI model or a function to retrieve it.
 ---@field model_name string AI model identifier to use
 ---@field debounce_ms integer Debounce time in milliseconds
@@ -28,7 +28,7 @@ local _default_config = {
     context_before_cursor = 200,
     context_after_cursor = 200,
   },
-  completion_endpoint = "http://localhost:11434/v1/completions",
+  completion_endpoint = "http://localhost:11434/api/chat",
   api_key = nil,
   model_name = "hf.co/Axottee/fateweaver-7B:Q4_K_M",
   debounce_ms = 300,
