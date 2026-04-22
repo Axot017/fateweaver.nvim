@@ -1,0 +1,3 @@
+[env]
+FATEWEAVER_LOG_FILE = "{{config_root}}/../.fateweaver-test.log"
+FATEWEAVER_COMPLETION_URL = "http://replace-me.invalid/api/chat"

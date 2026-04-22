@@ -25,8 +25,8 @@ local _default_config = {
   context_opts = {
     max_tracked_buffers = 5,
     max_history_per_buffer = 3,
-    context_before_cursor = 200,
-    context_after_cursor = 200,
+    context_before_cursor = 30,
+    context_after_cursor = 10,
   },
   completion_endpoint = "http://localhost:11434/api/chat",
   api_key = nil,

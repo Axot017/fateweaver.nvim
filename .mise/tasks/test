@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+PROJECT_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
+NVIM_BIN="${NVIM_BIN:-nvim}"
+
+export FATEWEAVER_LOCAL_PLUGIN="${PROJECT_ROOT}"
+export FATEWEAVER_LOG_FILE="${FATEWEAVER_LOG_FILE:-${PROJECT_ROOT}/.fateweaver-test.log}"
+export FATEWEAVER_COMPLETION_URL="${FATEWEAVER_COMPLETION_URL:-http://replace-me.invalid/api/chat}"
+
+NVIM_ARGS=(
+  -c 'lua vim.opt.runtimepath:prepend(vim.env.FATEWEAVER_LOCAL_PLUGIN)'
+)
+
+if [[ "${FATEWEAVER_SKIP_SETUP:-0}" != "1" ]]; then
+  NVIM_ARGS+=(
+    -c 'lua if not package.loaded["fateweaver"] then local endpoint = vim.env.FATEWEAVER_COMPLETION_URL; if endpoint == nil or endpoint == "" then endpoint = "http://replace-me.invalid/api/chat" end; require("fateweaver").setup({ log_level = "DEBUG", logger_fn = require("fateweaver.logger").file_logger(vim.env.FATEWEAVER_LOG_FILE), completion_endpoint = endpoint, }) end'
+  )
+fi
+
+exec "${NVIM_BIN}" "${NVIM_ARGS[@]}" "$@"
