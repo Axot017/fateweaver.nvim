@@ -25,12 +25,12 @@ local _default_config = {
   context_opts = {
     max_tracked_buffers = 5,
     max_history_per_buffer = 3,
-    context_before_cursor = 30,
-    context_after_cursor = 10,
+    context_before_cursor = 80,
+    context_after_cursor = 80,
   },
   completion_endpoint = "http://localhost:11434/api/chat",
   api_key = nil,
-  model_name = "hf.co/Axottee/fateweaver-7B:Q4_K_M",
+  model_name = "hf.co/Axottee/fateweaver-30B-A3B-GGUF:Q4_K_M",
   debounce_ms = 300,
   samples_file_path = nil,
 }

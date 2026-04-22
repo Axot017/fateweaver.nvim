@@ -47,13 +47,13 @@ require("fateweaver").setup({
   context_opts = {
     max_tracked_buffers = 5,          -- Maximum number of buffers for which plugin will store changes history
     max_history_per_buffer = 3,       -- Maximum number of recent changes to keep in history per buffer
-    context_before_cursor = 30,       -- Number of lines before cursor to include as context for the LLM
-    context_after_cursor = 10,        -- Number of lines after cursor to include as context for the LLM
+    context_before_cursor = 80,       -- Number of lines before cursor to include as context for the LLM
+    context_after_cursor = 80,        -- Number of lines after cursor to include as context for the LLM
   },
   
   -- Model configuration
   completion_endpoint = "http://localhost:11434/api/chat",
-  model_name = "hf.co/Axottee/fateweaver-7B:Q4_K_M",
+  model_name = "hf.co/Axottee/fateweaver-30B-A3B-GGUF:Q4_K_M",
   
   -- Performance options
   debounce_ms = 1000, -- Debounce time for completion requests
@@ -98,7 +98,7 @@ By default it uses Ollama's native chat endpoint, but OpenAI-compatible chat end
 1. **Install Ollama**: Follow the [Ollama installation guide](https://ollama.ai/)
 2. **Download your model**:
    ```bash
-   ollama pull hf.co/Axottee/fateweaver-7B:Q4_K_M
+   ollama pull hf.co/Axottee/fateweaver-30B-A3B-GGUF:Q4_K_M
    ```
    Replace this with your own trained model tag if needed.
 3. **Start Ollama server**:
@@ -140,23 +140,11 @@ This script:
 - calls `require("fateweaver").setup()` automatically if the plugin was not already loaded by your config
 - sets `log_level = "DEBUG"`
 - logs via `require("fateweaver.logger").file_logger(...)`
-- uses `FATEWEAVER_COMPLETION_URL` for the completion endpoint, with a placeholder default
+- uses `FATEWEAVER_COMPLETION_URL` for the completion endpoint from `.mise/config.toml`
+- uses `FATEWEAVER_LOG_FILE` from `.mise/config.toml` for file logging
+- adds an insert-mode `<C-y>` mapping that calls `require("fateweaver").accept_completion()`
 
-By default, `.mise/config.toml` defines:
-
-```toml
-[env]
-FATEWEAVER_LOG_FILE = "{{config_root}}/../.fateweaver-test.log"
-FATEWEAVER_COMPLETION_URL = "http://replace-me.invalid/api/chat"
-```
-
-So the script writes logs to:
-
-```bash
-.fateweaver-test.log
-```
-
-and uses this placeholder completion URL until you change it.
+Adjust `.mise/config.toml` to match your local environment before running the task.
 
 Note: your regular config still needs `nvim-lua/plenary.nvim` available, since Fateweaver depends on `plenary.curl`.
 
@@ -181,6 +169,8 @@ FATEWEAVER_SKIP_SETUP=1 mise run test
 # Run the task file directly if you want
 ./.mise/tasks/test lua/fateweaver/init.lua
 ```
+
+When launched this way, `<C-y>` in insert mode accepts the current Fateweaver completion.
 
 ## Contributing
 

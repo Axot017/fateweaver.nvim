@@ -198,7 +198,7 @@ function M.request_completion(bufnr, changes, callback)
   local messages = get_messages(bufnr, changes)
   local body = build_request_body(url, model, messages)
 
-  logger.debug("Requesting completion")
+  logger.debug("Requesting completion - Endpoint: " .. url .. " Model: " .. model)
   logger.debug("Request body:\n" .. vim.inspect(body))
 
   if request_job ~= nil then
