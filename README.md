@@ -48,7 +48,7 @@ require("fateweaver").setup({
     max_tracked_buffers = 5,          -- Maximum number of buffers for which plugin will store changes history
     max_history_per_buffer = 3,       -- Maximum number of recent changes to keep in history per buffer
     context_before_cursor = 30,       -- Number of lines before cursor to include as context for the LLM
-    context_after_cursor = 50,        -- Number of lines after cursor to include as context for the LLM
+    context_after_cursor = 10,        -- Number of lines after cursor to include as context for the LLM
   },
   
   -- Model configuration
@@ -118,6 +118,69 @@ You can also use other inference engines that provide chat-compatible APIs:
 - **Any other OpenAI-compatible server**
 
 Simply update the `completion_endpoint` in your configuration to point to your chosen inference server. For OpenAI-compatible servers, use a chat endpoint such as `/v1/chat/completions`.
+
+## Local testing with your normal Neovim config
+
+You can launch Neovim with your usual config and this local plugin repo injected on top with:
+
+```bash
+mise run test
+```
+
+This runs the task file:
+
+```bash
+.mise/tasks/test
+```
+
+This script:
+
+- prepends the current repo to `runtimepath` after your normal config loads
+- keeps your normal Neovim config enabled
+- calls `require("fateweaver").setup()` automatically if the plugin was not already loaded by your config
+- sets `log_level = "DEBUG"`
+- logs via `require("fateweaver.logger").file_logger(...)`
+- uses `FATEWEAVER_COMPLETION_URL` for the completion endpoint, with a placeholder default
+
+By default, `.mise/config.toml` defines:
+
+```toml
+[env]
+FATEWEAVER_LOG_FILE = "{{config_root}}/../.fateweaver-test.log"
+FATEWEAVER_COMPLETION_URL = "http://replace-me.invalid/api/chat"
+```
+
+So the script writes logs to:
+
+```bash
+.fateweaver-test.log
+```
+
+and uses this placeholder completion URL until you change it.
+
+Note: your regular config still needs `nvim-lua/plenary.nvim` available, since Fateweaver depends on `plenary.curl`.
+
+Useful variants:
+
+```bash
+# Start via mise
+mise run test
+
+# Open a specific file
+mise run test lua/fateweaver/init.lua
+
+# Override the completion endpoint for one run
+FATEWEAVER_COMPLETION_URL=http://localhost:11434/api/chat mise run test
+
+# Override the log file path for one run
+FATEWEAVER_LOG_FILE=/tmp/fateweaver.log mise run test
+
+# Keep your normal config, but skip the automatic setup() call
+FATEWEAVER_SKIP_SETUP=1 mise run test
+
+# Run the task file directly if you want
+./.mise/tasks/test lua/fateweaver/init.lua
+```
 
 ## Contributing
 
